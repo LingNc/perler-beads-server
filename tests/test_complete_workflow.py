@@ -9,7 +9,7 @@ import base64
 import os
 
 # API基础URL
-BASE_URL = "http://localhost:3000/api/v1"
+BASE_URL = "http://localhost:3000/api"
 
 def encode_image_to_base64(image_path):
     """将图片编码为base64"""

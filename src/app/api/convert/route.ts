@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculatePixelGrid, PixelationMode, PaletteColor } from '../../../../utils/pixelation';
+import { calculatePixelGrid, PixelationMode, PaletteColor } from '../../../utils/pixelation';
 import {
   getPaletteByName,
   calculateColorCounts,
   createImageFromBuffer,
   validateConvertParams
-} from '../../../../utils/apiUtils';
+} from '../../../utils/apiUtils';
 
 export async function POST(request: NextRequest) {
   try {

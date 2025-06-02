@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateImageBuffer } from '../../../../utils/serverImageDownloader';
-import { generateFilename } from '../../../../utils/apiUtils';
-import { GridDownloadOptions } from '../../../../types/downloadTypes';
-import { MappedPixel, PaletteColor } from '../../../../utils/pixelation';
-import { ColorSystem } from '../../../../utils/colorSystemUtils';
+import { generateImageBuffer } from '../../../utils/serverImageDownloader';
+import { generateFilename } from '../../../utils/apiUtils';
+import { GridDownloadOptions } from '../../../types/downloadTypes';
+import { MappedPixel, PaletteColor } from '../../../utils/pixelation';
+import { ColorSystem } from '../../../utils/colorSystemUtils';
 
 // 下载选项类型定义
 interface DownloadOptions {

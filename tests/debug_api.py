@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 
 # API配置
-BASE_URL = "http://localhost:3000/api/v1"
+BASE_URL = "http://localhost:3000/api"
 TEST_IMAGE = "test_image.png"
 
 def print_header(title):

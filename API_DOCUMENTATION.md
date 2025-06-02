@@ -5,7 +5,7 @@
 拼豆图纸生成器 API 是一个基于 Next.js 构建的 RESTful API，提供图片转换为拼豆图纸的完整功能。支持多种颜色系统、调色板管理、图片处理和高质量图纸生成。
 
 **基础信息:**
-- 基础URL: `http://localhost:3000/api/v1`
+- 基础URL: `http://localhost:3000/api`
 - 数据格式: JSON
 - 编码: UTF-8
 - 最大文件大小: 10MB
@@ -25,7 +25,7 @@
 
 ## 1. 状态检查 API
 
-### GET `/api/v1/status`
+### GET `/api/status`
 
 获取API服务的运行状态和系统信息。
 
@@ -33,7 +33,7 @@
 ```python
 import requests
 
-response = requests.get("http://localhost:3000/api/v1/status")
+response = requests.get("http://localhost:3000/api/status")
 print(response.json())
 ```
 
@@ -62,7 +62,7 @@ print(response.json())
 
 ## 2. 调色板 API
 
-### GET `/api/v1/palette`
+### GET `/api/palette`
 
 获取支持的颜色系统和调色板信息。
 
@@ -70,7 +70,7 @@ print(response.json())
 ```python
 import requests
 
-response = requests.get("http://localhost:3000/api/v1/palette")
+response = requests.get("http://localhost:3000/api/palette")
 palette_data = response.json()
 color_systems = palette_data['data']['colorSystems']
 print(f"可用颜色系统: {[cs['key'] for cs in color_systems]}")
@@ -104,7 +104,7 @@ print(f"可用颜色系统: {[cs['key'] for cs in color_systems]}")
 
 ## 3. 图片转换 API
 
-### POST `/api/v1/convert`
+### POST `/api/convert`
 
 将图片转换为拼豆像素数据，支持自定义粒度和颜色系统。
 
@@ -133,7 +133,7 @@ convert_data = {
 }
 
 response = requests.post(
-    "http://localhost:3000/api/v1/convert",
+    "http://localhost:3000/api/convert",
     json=convert_data,
     headers={"Content-Type": "application/json"}
 )
@@ -180,7 +180,7 @@ print(f"网格尺寸: {result['data']['gridDimensions']}")
 
 ## 4. 图纸下载 API
 
-### POST `/api/v1/download`
+### POST `/api/download`
 
 生成高质量的拼豆图纸PNG文件，支持网格线、坐标系、颜色统计等功能。**已优化边距显示，确保图片布局平衡专业。**
 
@@ -229,7 +229,7 @@ download_data = {
 }
 
 response = requests.post(
-    "http://localhost:3000/api/v1/download",
+    "http://localhost:3000/api/download",
     json=download_data,
     headers={"Content-Type": "application/json"}
 )
@@ -259,7 +259,7 @@ import requests
 import base64
 import os
 
-BASE_URL = "http://localhost:3000/api/v1"
+BASE_URL = "http://localhost:3000/api"
 
 def encode_image_to_base64(image_path):
     """将图片编码为base64"""

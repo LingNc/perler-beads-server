@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMardToHexMapping, getColorSystemOptions } from '../../../../utils/colorSystemUtils';
-import { hexToRgb } from '../../../../utils/pixelation';
+import { getMardToHexMapping, getColorSystemOptions } from '../../../utils/colorSystemUtils';
+import { hexToRgb } from '../../../utils/pixelation';
 
 export async function GET(request: NextRequest) {
   try {

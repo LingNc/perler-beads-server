@@ -9,7 +9,7 @@ import sys
 import os
 
 # API基础URL
-BASE_URL = "http://localhost:3000/api/v1"
+BASE_URL = "http://localhost:3000/api"
 
 def test_download_api():
     """测试下载API"""
