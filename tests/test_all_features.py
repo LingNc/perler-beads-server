@@ -1,0 +1,507 @@
+#!/usr/bin/env python3
+"""
+拼豆图纸生成器 API 全功能测试脚本
+测试所有API功能，包括自定义调色板
+"""
+
+import requests
+import json
+import os
+import time
+from datetime import datetime
+from pathlib import Path
+
+# API配置
+BASE_URL = "http://localhost:3000/api"
+TEST_IMAGE = "test_image.png"
+
+def print_header(title):
+    """打印美观的标题"""
+    print(f"\n{'=' * 70}")
+    print(f"🎯 {title}")
+    print(f"{'=' * 70}")
+
+def print_step(step, description):
+    """打印步骤信息"""
+    print(f"\n📋 步骤 {step}: {description}")
+    print("-" * 50)
+
+def print_success(message):
+    """打印成功信息"""
+    print(f"✅ {message}")
+
+def print_error(message):
+    """打印错误信息"""
+    print(f"❌ {message}")
+
+def print_info(message):
+    """打印信息"""
+    print(f"ℹ️  {message}")
+
+def test_status_api():
+    """测试状态API"""
+    print_step(1, "测试API服务状态")
+
+    try:
+        start_time = time.time()
+        response = requests.get(f"{BASE_URL}/status")
+        response_time = (time.time() - start_time) * 1000
+
+        print(f"🌐 URL: GET {BASE_URL}/status")
+        print(f"⏱️  响应时间: {response_time:.2f}ms")
+        print(f"📊 状态码: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()
+            print_success(f"服务状态: {data['status']}")
+            print(f"🚀 版本: {data.get('version', 'N/A')}")
+            print(f"⏰ 运行时间: {data.get('uptime', 0):.2f}s")
+
+            if 'health' in data:
+                health = data['health']
+                print(f"💾 内存使用: {health.get('memory_usage', 'N/A')}")
+
+                features = health.get('features', {})
+                if features:
+                    print("🔧 功能支持:")
+                    for feature, status in features.items():
+                        status_icon = "✅" if status else "❌"
+                        print(f"   {status_icon} {feature}")
+
+            return True
+        else:
+            print_error(f"状态检查失败: {response.status_code}")
+            return False
+
+    except Exception as e:
+        print_error(f"状态检查异常: {e}")
+        return False
+
+def test_palette_api():
+    """测试调色板API"""
+    print_step(2, "测试调色板API")
+
+    try:
+        # 测试基础调色板信息
+        start_time = time.time()
+        response = requests.get(f"{BASE_URL}/palette")
+        response_time = (time.time() - start_time) * 1000
+
+        print(f"🌐 URL: GET {BASE_URL}/palette")
+        print(f"⏱️  响应时间: {response_time:.2f}ms")
+        print(f"📊 状态码: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()['data']
+            print_success("基础调色板信息获取成功")
+
+            print(f"🎨 可用调色板: {len(data.get('availablePalettes', []))}")
+            for palette in data.get('availablePalettes', []):
+                print(f"   📦 {palette}")
+
+            print(f"🏷️  颜色系统数量: {len(data.get('colorSystems', []))}")
+            for system in data.get('colorSystems', []):
+                print(f"   🎯 {system['key']} ({system['name']})")
+
+            print(f"📈 总颜色数: {data.get('totalColors', 'N/A')}")
+            print(f"🔧 支持自定义调色板: {data.get('supportsCustomPalette', False)}")
+
+            # 测试详细调色板信息
+            print("\n🔍 获取详细调色板信息...")
+            detailed_response = requests.get(f"{BASE_URL}/palette?detailed=true")
+            if detailed_response.status_code == 200:
+                detailed_data = detailed_response.json()['data']
+                print_success(f"详细调色板获取成功，包含 {detailed_data['totalColors']} 种颜色")
+
+                # 显示前5种颜色作为示例
+                colors = detailed_data.get('colors', [])[:5]
+                print("🎨 颜色示例 (前5种):")
+                for color in colors:
+                    print(f"   {color['key']}: {color['hex']} RGB{color['rgb']}")
+
+                return data
+            else:
+                print_error(f"获取详细调色板失败: {detailed_response.status_code}")
+                return data
+        else:
+            print_error(f"调色板获取失败: {response.status_code}")
+            return None
+
+    except Exception as e:
+        print_error(f"调色板测试异常: {e}")
+        return None
+
+def test_custom_palette_validation():
+    """测试自定义调色板验证"""
+    print_step(3, "测试自定义调色板验证")
+
+    # 创建测试调色板
+    test_palette = {
+        "version": "3.0",
+        "selectedHexValues": [
+            "#E7002F",
+            "#FEFFFF"
+        ],
+        "exportDate": "2025-06-02T16:09:31.956Z",
+        "totalColors": 2
+    }
+
+    try:
+        start_time = time.time()
+        response = requests.post(
+            f"{BASE_URL}/palette",
+            json={"customPalette": test_palette},
+            headers={"Content-Type": "application/json"}
+        )
+        response_time = (time.time() - start_time) * 1000
+
+        print(f"🌐 URL: POST {BASE_URL}/palette")
+        print(f"⏱️  响应时间: {response_time:.2f}ms")
+        print(f"📊 状态码: {response.status_code}")
+        print(f"🎨 测试调色板颜色数: {test_palette['totalColors']}")
+
+        if response.status_code == 200:
+            data = response.json()['data']
+            print_success(f"自定义调色板验证成功")
+            print(f"✨ 验证的颜色数: {data['totalColors']}")
+            print(f"💬 消息: {data['message']}")
+
+            # 显示验证的颜色
+            print("🎨 验证的颜色:")
+            for color in data['validatedColors']:
+                print(f"   {color['key']}: {color['hex']}")
+
+            return test_palette
+        else:
+            print_error(f"自定义调色板验证失败: {response.status_code}")
+            if response.text:
+                error_data = response.json()
+                print(f"错误详情: {error_data.get('error', 'N/A')}")
+            return None
+
+    except Exception as e:
+        print_error(f"自定义调色板验证异常: {e}")
+        return None
+
+def test_image_conversion_default_palette(palette_data):
+    """测试使用默认调色板的图片转换"""
+    print_step(4, "测试图片转换 (默认291色调色板)")
+
+    if not os.path.exists(TEST_IMAGE):
+        print_error(f"测试图片 {TEST_IMAGE} 不存在")
+        return None
+
+    try:
+        # 使用默认调色板
+        color_system = palette_data['colorSystems'][0]['key']
+        default_palette = palette_data['defaultPalette']
+
+        print(f"📷 图片文件: {TEST_IMAGE}")
+        print(f"🎯 使用调色板: {default_palette}")
+        print(f"🎨 颜色系统: {color_system}")
+
+        with open(TEST_IMAGE, 'rb') as f:
+            files = {'image': (TEST_IMAGE, f, 'image/png')}
+            form_data = {
+                'granularity': '50',
+                'pixelationMode': 'average',
+                'selectedPalette': default_palette,
+                'selectedColorSystem': color_system,
+                'similarityThreshold': '0'
+            }
+
+            start_time = time.time()
+            response = requests.post(
+                f"{BASE_URL}/convert",
+                files=files,
+                data=form_data
+            )
+            response_time = (time.time() - start_time) * 1000
+
+        print(f"🌐 URL: POST {BASE_URL}/convert")
+        print(f"⏱️  响应时间: {response_time:.2f}ms")
+        print(f"📊 状态码: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()['data']
+            print_success("默认调色板图片转换成功")
+
+            grid_dims = data['gridDimensions']
+            print(f"📐 网格尺寸: {grid_dims['width']}x{grid_dims['height']}")
+            print(f"🔢 总珠子数: {data['totalBeadCount']}")
+            print(f"🎨 使用颜色数: {len(data['colorCounts'])}")
+
+            # 显示处理参数
+            params = data['processingParams']
+            print(f"⚙️  调色板来源: {params['paletteSource']}")
+
+            # 显示前5种使用的颜色
+            color_counts = data['colorCounts']
+            sorted_colors = sorted(color_counts.items(), key=lambda x: x[1]['count'], reverse=True)[:5]
+            print("🎨 使用最多的颜色 (前5种):")
+            for color_key, info in sorted_colors:
+                print(f"   {info['color']}: {info['count']} 颗")
+
+            return data
+        else:
+            print_error(f"默认调色板转换失败: {response.status_code}")
+            if response.text:
+                error_data = response.json()
+                print(f"错误详情: {error_data.get('error', 'N/A')}")
+            return None
+
+    except Exception as e:
+        print_error(f"默认调色板转换异常: {e}")
+        return None
+
+def test_image_conversion_custom_palette(custom_palette):
+    """测试使用自定义调色板的图片转换"""
+    print_step(5, "测试图片转换 (自定义调色板)")
+
+    if not custom_palette:
+        print_error("没有有效的自定义调色板，跳过测试")
+        return None
+
+    if not os.path.exists(TEST_IMAGE):
+        print_error(f"测试图片 {TEST_IMAGE} 不存在")
+        return None
+
+    try:
+        print(f"📷 图片文件: {TEST_IMAGE}")
+        print(f"🎨 自定义调色板颜色数: {len(custom_palette)}")
+
+        with open(TEST_IMAGE, 'rb') as f:
+            files = {'image': (TEST_IMAGE, f, 'image/png')}
+            form_data = {
+                'granularity': '20',
+                'pixelationMode': 'dominant',
+                'selectedPalette': '自定义',
+                'selectedColorSystem': 'MARD',
+                'similarityThreshold': '70',
+                'customPalette': json.dumps(custom_palette)
+            }
+
+            start_time = time.time()
+            response = requests.post(
+                f"{BASE_URL}/convert",
+                files=files,
+                data=form_data
+            )
+            response_time = (time.time() - start_time) * 1000
+
+        print(f"🌐 URL: POST {BASE_URL}/convert")
+        print(f"⏱️  响应时间: {response_time:.2f}ms")
+        print(f"📊 状态码: {response.status_code}")
+
+        if response.status_code == 200:
+            data = response.json()['data']
+            print_success("自定义调色板图片转换成功")
+
+            grid_dims = data['gridDimensions']
+            print(f"📐 网格尺寸: {grid_dims['width']}x{grid_dims['height']}")
+            print(f"🔢 总珠子数: {data['totalBeadCount']}")
+            print(f"🎨 使用颜色数: {len(data['colorCounts'])}")
+
+            # 显示处理参数
+            params = data['processingParams']
+            print(f"⚙️  调色板来源: {params['paletteSource']}")
+            print(f"🎯 自定义调色板颜色数: {params.get('customPaletteColors', 'N/A')}")
+
+            # 显示所有使用的颜色（因为自定义调色板颜色较少）
+            color_counts = data['colorCounts']
+            print("🎨 使用的颜色分布:")
+            for color_key, info in color_counts.items():
+                print(f"   {info['color']}: {info['count']} 颗")
+
+            return data
+        else:
+            print_error(f"自定义调色板转换失败: {response.status_code}")
+            if response.text:
+                error_data = response.json()
+                print(f"错误详情: {error_data.get('error', 'N/A')}")
+            return None
+
+    except Exception as e:
+        print_error(f"自定义调色板转换异常: {e}")
+        return None
+
+def test_pattern_download(convert_data, output_filename):
+    """测试图纸下载"""
+    print_step(6, f"测试图纸下载 ({output_filename})")
+
+    if not convert_data:
+        print_error("没有转换数据，跳过下载测试")
+        return False
+
+    try:
+        # 准备下载数据
+        download_data = {
+            "pixelData": convert_data['pixelData'],
+            "gridDimensions": convert_data['gridDimensions'],
+            "colorCounts": convert_data['colorCounts'],
+            "totalBeadCount": convert_data['totalBeadCount'],
+            "activeBeadPalette": convert_data['activeBeadPalette'],
+            "selectedColorSystem": convert_data['processingParams']['selectedColorSystem'],
+            "downloadOptions": {
+                "showGrid": True,
+                "gridInterval": 10,
+                "showCoordinates": True,
+                "includeStats": True,
+                "filename": Path(output_filename).stem
+            }
+        }
+
+        start_time = time.time()
+        response = requests.post(
+            f"{BASE_URL}/download",
+            json=download_data,
+            headers={'Content-Type': 'application/json'}
+        )
+        response_time = (time.time() - start_time) * 1000
+
+        print(f"🌐 URL: POST {BASE_URL}/download")
+        print(f"⏱️  响应时间: {response_time:.2f}ms")
+        print(f"📊 状态码: {response.status_code}")
+
+        if response.status_code == 200:
+            # 保存文件
+            with open(output_filename, 'wb') as f:
+                f.write(response.content)
+
+            file_size = len(response.content) / 1024  # KB
+            print_success(f"图纸下载成功")
+            print(f"💾 保存到: {output_filename}")
+            print(f"📁 文件大小: {file_size:.1f} KB")
+
+            return True
+        else:
+            print_error(f"图纸下载失败: {response.status_code}")
+            return False
+
+    except Exception as e:
+        print_error(f"图纸下载异常: {e}")
+        return False
+
+def test_api_documentation():
+    """测试API文档端点"""
+    print_step(7, "测试API文档端点")
+
+    endpoints = [
+        ("convert", "图片转换API文档"),
+        ("palette", "调色板API文档"),
+        ("download", "下载API文档"),
+        ("status", "状态API文档")
+    ]
+
+    docs_available = 0
+
+    for endpoint, description in endpoints:
+        try:
+            response = requests.get(f"{BASE_URL}/{endpoint}")
+            if response.status_code == 200:
+                data = response.json()
+                if 'endpoint' in data or 'description' in data:
+                    print_success(f"{description}: 可用")
+                    docs_available += 1
+                else:
+                    print_info(f"{description}: 数据格式不标准")
+            else:
+                print_info(f"{description}: HTTP {response.status_code}")
+        except Exception as e:
+            print_error(f"{description}: 异常 - {e}")
+
+    print(f"\n📊 文档端点可用性: {docs_available}/{len(endpoints)}")
+    return docs_available == len(endpoints)
+
+def main():
+    """主函数"""
+    print_header("拼豆图纸生成器 API 全功能测试")
+    print(f"🕐 测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"🔗 API基础URL: {BASE_URL}")
+    print(f"📷 测试图片: {TEST_IMAGE}")
+
+    results = {
+        'status': False,
+        'palette': False,
+        'custom_palette': False,
+        'default_convert': False,
+        'custom_convert': False,
+        'default_download': False,
+        'custom_download': False,
+        'documentation': False
+    }
+
+    # 1. 测试状态API
+    results['status'] = test_status_api()
+
+    # 2. 测试调色板API
+    palette_data = test_palette_api()
+    results['palette'] = palette_data is not None
+
+    # 3. 测试自定义调色板验证
+    custom_palette = test_custom_palette_validation()
+    results['custom_palette'] = custom_palette is not None
+
+    # 4. 测试默认调色板图片转换
+    default_convert_data = None
+    if palette_data:
+        default_convert_data = test_image_conversion_default_palette(palette_data)
+        results['default_convert'] = default_convert_data is not None
+
+    # 5. 测试自定义调色板图片转换
+    custom_convert_data = None
+    if custom_palette:
+        custom_convert_data = test_image_conversion_custom_palette(custom_palette)
+        results['custom_convert'] = custom_convert_data is not None
+
+    # 6. 测试图纸下载
+    if default_convert_data:
+        results['default_download'] = test_pattern_download(
+            default_convert_data,
+            "default_palette_pattern.png"
+        )
+
+    if custom_convert_data:
+        results['custom_download'] = test_pattern_download(
+            custom_convert_data,
+            "custom_palette_pattern.png"
+        )
+
+    # 7. 测试API文档
+    results['documentation'] = test_api_documentation()
+
+    # 生成总结报告
+    print_header("测试结果总结")
+
+    test_items = [
+        ('状态API', results['status']),
+        ('调色板API', results['palette']),
+        ('自定义调色板验证', results['custom_palette']),
+        ('默认调色板转换', results['default_convert']),
+        ('自定义调色板转换', results['custom_convert']),
+        ('默认调色板下载', results['default_download']),
+        ('自定义调色板下载', results['custom_download']),
+        ('API文档', results['documentation'])
+    ]
+
+    passed_tests = 0
+    for test_name, passed in test_items:
+        status_icon = "✅" if passed else "❌"
+        print(f"{status_icon} {test_name}")
+        if passed:
+            passed_tests += 1
+
+    success_rate = (passed_tests / len(test_items)) * 100
+    print(f"\n📊 测试通过率: {passed_tests}/{len(test_items)} ({success_rate:.1f}%)")
+
+    if success_rate >= 90:
+        print("🎉 所有主要功能测试通过！API完全可用")
+    elif success_rate >= 70:
+        print("⚠️  大部分功能正常，部分功能需要检查")
+    else:
+        print("❌ 多个功能存在问题，需要调试")
+
+    print_header("全功能测试完成")
+
+if __name__ == "__main__":
+    main()

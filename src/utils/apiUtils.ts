@@ -5,7 +5,7 @@ import { getMardToHexMapping } from './colorSystemUtils';
 import type { ColorSystem } from './pixelation';
 
 // 获取调色板数据
-export function getPaletteByName(paletteName: string = '168色'): PaletteColor[] {
+export function getPaletteByName(paletteName: string = '291色'): PaletteColor[] {
   const mardToHexMapping = getMardToHexMapping();
 
   // 从colorSystemMapping.json获取所有MARD色号并转换为PaletteColor格式
@@ -18,6 +18,77 @@ export function getPaletteByName(paletteName: string = '168色'): PaletteColor[]
     .filter((color): color is PaletteColor => color !== null);
 
   return fullBeadPalette;
+}
+
+// 解析自定义调色板
+export function parseCustomPalette(customPaletteData: any): PaletteColor[] {
+  // 支持新格式：{ version: "3.0", selectedHexValues: ["#RRGGBB", ...], exportDate: "...", totalColors: N }
+  if (customPaletteData && typeof customPaletteData === 'object' && customPaletteData.selectedHexValues) {
+    const { selectedHexValues, version, totalColors } = customPaletteData;
+
+    if (!Array.isArray(selectedHexValues)) {
+      throw new Error('selectedHexValues必须是数组格式');
+    }
+
+    if (selectedHexValues.length === 0) {
+      throw new Error('自定义调色板不能为空');
+    }
+
+    const palette: PaletteColor[] = [];
+
+    for (let i = 0; i < selectedHexValues.length; i++) {
+      const hexValue = selectedHexValues[i];
+
+      if (typeof hexValue !== 'string' || !hexValue.startsWith('#')) {
+        throw new Error(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
+      }
+
+      const rgb = hexToRgb(hexValue);
+      if (!rgb) {
+        throw new Error(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
+      }
+
+      palette.push({
+        key: hexValue, // 使用hex值作为key
+        hex: hexValue,
+        rgb: rgb
+      });
+    }
+
+    return palette;
+  }
+
+  // 支持旧格式：[{ key: "颜色名", hex: "#RRGGBB" }, ...]
+  if (Array.isArray(customPaletteData)) {
+    const palette: PaletteColor[] = [];
+
+    for (let i = 0; i < customPaletteData.length; i++) {
+      const color = customPaletteData[i];
+
+      if (!color.hex || !color.key) {
+        throw new Error(`第${i + 1}个颜色缺少必要的hex或key字段`);
+      }
+
+      const rgb = hexToRgb(color.hex);
+      if (!rgb) {
+        throw new Error(`第${i + 1}个颜色的hex值格式无效: ${color.hex}`);
+      }
+
+      palette.push({
+        key: color.key,
+        hex: color.hex,
+        rgb: rgb
+      });
+    }
+
+    if (palette.length === 0) {
+      throw new Error('自定义调色板不能为空');
+    }
+
+    return palette;
+  }
+
+  throw new Error('自定义调色板格式无效，请使用正确的JSON格式');
 }
 
 // 计算颜色统计

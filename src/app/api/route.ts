@@ -8,7 +8,7 @@ export async function GET() {
     status: 'active',
     timestamp: new Date().toISOString(),
     endpoints: {
-      '/api/v1/convert': {
+      '/api/convert': {
         method: 'POST',
         description: '将图片转换为拼豆图纸',
         parameters: {
@@ -16,11 +16,12 @@ export async function GET() {
           granularity: 'number - 精细度 (1-200, 默认50)',
           similarityThreshold: 'number - 相似度阈值 (0-100, 默认30)',
           pixelationMode: 'string - 像素化模式 (dominant/average, 默认dominant)',
-          selectedPalette: 'string - 调色板名称 (默认168色)',
-          selectedColorSystem: 'string - 色号系统 (默认MARD)'
+          selectedPalette: 'string - 调色板名称 (默认291色)',
+          selectedColorSystem: 'string - 色号系统 (默认MARD)',
+          customPalette: 'string - 自定义调色板JSON (可选，新格式: {"version":"3.0","selectedHexValues":["#RRGGBB"],"exportDate":"...","totalColors":N} 或旧格式: [{"key":"颜色名","hex":"#RRGGBB"}])'
         }
       },
-      '/api/v1/download': {
+      '/api/download': {
         method: 'POST',
         description: '生成并下载图纸图片',
         parameters: {
@@ -30,15 +31,17 @@ export async function GET() {
           downloadOptions: 'object - 下载选项'
         }
       },
-      '/api/v1/palette': {
-        method: 'GET',
-        description: '获取调色板信息',
+      '/api/palette': {
+        method: 'GET/POST',
+        description: 'GET: 获取调色板信息; POST: 验证自定义调色板',
         parameters: {
-          colorSystem: 'string - 色号系统 (可选)',
-          detailed: 'boolean - 是否返回详细信息 (可选)'
+          colorSystem: 'string - 色号系统 (可选, GET)',
+          detailed: 'boolean - 是否返回详细信息 (可选, GET)',
+          colors: 'array - 自定义颜色数组 (POST验证，旧格式)',
+          customPalette: 'object - 自定义调色板对象 (POST验证，新格式)'
         }
       },
-      '/api/v1/status': {
+      '/api/status': {
         method: 'GET',
         description: '获取API状态信息'
       }
@@ -46,9 +49,12 @@ export async function GET() {
     features: [
       '图片转拼豆图纸',
       '多种像素化模式',
-      '自定义调色板',
+      '自定义调色板支持',
+      '291色完整调色板',
+      '5种色号系统',
       '图纸下载',
       '颜色统计',
+      '自定义调色板验证',
       '多种输出格式'
     ],
     supportedFormats: {
@@ -63,18 +69,29 @@ export async function GET() {
     },
     examples: {
       convertImage: {
-        url: '/api/v1/convert',
+        url: '/api/convert',
         method: 'POST',
         contentType: 'multipart/form-data',
         formData: {
           image: '[图片文件]',
           granularity: 50,
           pixelationMode: 'dominant',
-          selectedPalette: '168色'
+          selectedPalette: '291色'
+        }
+      },
+      convertWithCustomPalette: {
+        url: '/api/convert',
+        method: 'POST',
+        contentType: 'multipart/form-data',
+        formData: {
+          image: '[图片文件]',
+          granularity: 50,
+          selectedPalette: '自定义',
+          customPalette: '[{"key":"红色","hex":"#FF0000"},{"key":"绿色","hex":"#00FF00"}]'
         }
       },
       downloadPattern: {
-        url: '/api/v1/download',
+        url: '/api/download',
         method: 'POST',
         contentType: 'application/json',
         body: {

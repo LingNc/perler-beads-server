@@ -33,10 +33,10 @@ export async function GET(request: NextRequest) {
       });
     } else {
       // 返回简单的调色板选项
+      const totalColors = Object.keys(mardToHexMapping).length;
       const paletteOptions = [
-        { name: '168色', description: '完整色板', colorCount: Object.keys(mardToHexMapping).length },
-        { name: '144色', description: '常用色板', colorCount: 144 },
-        { name: '96色', description: '基础色板', colorCount: 96 }
+        { name: '291色', description: '完整色板', colorCount: totalColors },
+        { name: '自定义', description: '用户上传的调色板', colorCount: 0 }
       ];
 
       const colorSystems = getColorSystemOptions();
@@ -44,10 +44,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         data: {
+          availablePalettes: paletteOptions.map(p => p.name),
           paletteOptions: paletteOptions,
           colorSystems: colorSystems,
           defaultColorSystem: 'MARD',
-          defaultPalette: '168色'
+          defaultPalette: '291色',
+          totalColors: totalColors,
+          supportsCustomPalette: true
         }
       });
     }
@@ -69,8 +72,64 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { colors } = body;
+    const { colors, customPalette } = body;
 
+    // 支持新格式：{ version: "3.0", selectedHexValues: ["#RRGGBB", ...] }
+    if (customPalette && customPalette.selectedHexValues) {
+      const { selectedHexValues, version, totalColors } = customPalette;
+
+      if (!Array.isArray(selectedHexValues)) {
+        return NextResponse.json({
+          success: false,
+          error: 'selectedHexValues必须是数组格式'
+        }, { status: 400 });
+      }
+
+      // 验证颜色格式
+      const validatedColors = [];
+      const errors = [];
+
+      for (let i = 0; i < selectedHexValues.length; i++) {
+        const hexValue = selectedHexValues[i];
+
+        if (typeof hexValue !== 'string' || !hexValue.startsWith('#')) {
+          errors.push(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
+          continue;
+        }
+
+        const rgb = hexToRgb(hexValue);
+        if (!rgb) {
+          errors.push(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
+          continue;
+        }
+
+        validatedColors.push({
+          key: hexValue,
+          hex: hexValue,
+          rgb: rgb
+        });
+      }
+
+      if (errors.length > 0) {
+        return NextResponse.json({
+          success: false,
+          error: '颜色验证失败',
+          details: errors
+        }, { status: 400 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          validatedColors: validatedColors,
+          totalColors: validatedColors.length,
+          version: version,
+          message: '自定义调色板验证成功'
+        }
+      });
+    }
+
+    // 支持旧格式：{ colors: [{ key: "颜色名", hex: "#RRGGBB" }] }
     if (!Array.isArray(colors)) {
       return NextResponse.json({
         success: false,
