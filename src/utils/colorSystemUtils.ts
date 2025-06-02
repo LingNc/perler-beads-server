@@ -13,6 +13,11 @@ export const colorSystemOptions = [
   { key: '咪小窝', name: '咪小窝' },
 ];
 
+// 获取色号系统选项的函数
+export function getColorSystemOptions() {
+  return colorSystemOptions;
+}
+
 // 类型定义
 type ColorMapping = Record<string, Record<ColorSystem, string>>;
 const typedColorSystemMapping = colorSystemMapping as ColorMapping;
@@ -66,16 +71,16 @@ export function getDisplayColorKey(hexValue: string, colorSystem: ColorSystem): 
   if (hexValue === 'ERASE' || hexValue.length === 0 || hexValue === '?') {
     return hexValue;
   }
-  
+
   // 标准化hex值（确保大写）
   const normalizedHex = hexValue.toUpperCase();
-  
+
   // 通过hex值从colorSystemMapping获取目标色号系统的值
   const colorMapping = typedColorSystemMapping[normalizedHex];
   if (colorMapping && colorMapping[colorSystem]) {
     return colorMapping[colorSystem];
   }
-  
+
   return '?'; // 如果找不到映射，返回 '?'
 }
 
@@ -85,14 +90,14 @@ export function convertColorKeyToHex(displayKey: string, colorSystem: ColorSyste
   if (displayKey.startsWith('#') && displayKey.length === 7) {
     return displayKey.toUpperCase();
   }
-  
+
   // 在colorSystemMapping中查找对应的hex值
   for (const [hex, mapping] of Object.entries(typedColorSystemMapping)) {
     if (mapping[colorSystem] === displayKey) {
       return hex;
     }
   }
-  
+
   return displayKey; // 如果找不到映射，返回原键
 }
 
@@ -106,13 +111,13 @@ export function isValidColorInSystem(hexValue: string, colorSystem: ColorSystem)
 export function getColorKeyByHex(hexValue: string, colorSystem: ColorSystem): string {
   // 标准化hex值（确保大写）
   const normalizedHex = hexValue.toUpperCase();
-  
+
   // 查找映射
   const mapping = typedColorSystemMapping[normalizedHex];
   if (mapping && mapping[colorSystem]) {
     return mapping[colorSystem];
   }
-  
+
   // 如果找不到映射，返回 '?'
   return '?';
 }
@@ -121,7 +126,7 @@ export function getColorKeyByHex(hexValue: string, colorSystem: ColorSystem): st
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
   // 移除 # 符号
   const cleanHex = hex.replace('#', '');
-  
+
   // 转换为RGB
   const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
   const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
@@ -130,7 +135,7 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const diff = max - min;
-  
+
   let h = 0;
   let s = 0;
   const l = (max + min) / 2;
@@ -159,18 +164,18 @@ export function sortColorsByHue<T extends { color: string }>(colors: T[]): T[] {
   return colors.slice().sort((a, b) => {
     const hslA = hexToHsl(a.color);
     const hslB = hexToHsl(b.color);
-    
+
     // 首先按色相排序
     if (Math.abs(hslA.h - hslB.h) > 5) { // 增加色相容差，让更相近的色相归为一组
       return hslA.h - hslB.h;
     }
-    
+
     // 色相相近时，按明度排序（从浅到深）
     if (Math.abs(hslA.l - hslB.l) > 3) {
       return hslB.l - hslA.l; // 浅色（高明度）在前，深色（低明度）在后
     }
-    
+
     // 明度也相近时，按饱和度排序（高饱和度在前，让鲜艳的颜色更突出）
     return hslB.s - hslA.s;
   });
-} 
+}
