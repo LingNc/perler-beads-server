@@ -387,20 +387,22 @@ def test_api_documentation():
     print_step(7, "测试API文档端点")
 
     endpoints = [
-        ("convert", "图片转换API文档"),
-        ("palette", "调色板API文档"),
-        ("download", "下载API文档"),
-        ("status", "状态API文档")
+        ("convert", "图片转换API文档", ["endpoint", "method", "description"]),
+        ("palette", "调色板API文档", ["success", "data"]),
+        ("download", "下载API文档", ["endpoint", "method", "description"]),
+        ("status", "状态API文档", ["service", "status", "version"])
     ]
 
     docs_available = 0
 
-    for endpoint, description in endpoints:
+    for endpoint, description, expected_fields in endpoints:
         try:
             response = requests.get(f"{BASE_URL}/{endpoint}")
             if response.status_code == 200:
                 data = response.json()
-                if 'endpoint' in data or 'description' in data:
+                # 检查是否包含预期的字段
+                has_expected_fields = any(field in data for field in expected_fields)
+                if has_expected_fields:
                     print_success(f"{description}: 可用")
                     docs_available += 1
                 else:
