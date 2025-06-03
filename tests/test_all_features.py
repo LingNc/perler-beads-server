@@ -386,34 +386,76 @@ def test_api_documentation():
     """测试API文档端点"""
     print_step(7, "测试API文档端点")
 
+    # 测试主API文档
+    print("🔍 测试主API入口文档...")
+    try:
+        response = requests.get(BASE_URL)
+        if response.status_code == 200:
+            data = response.json()
+            if 'name' in data and 'endpoints' in data:
+                print_success("主API文档: 可用")
+                print(f"   📦 API名称: {data.get('name', 'N/A')}")
+                print(f"   📋 端点数: {len(data.get('endpoints', {}))}")
+            else:
+                print_info("主API文档: 格式不完整")
+        else:
+            print_error(f"主API文档: HTTP {response.status_code}")
+    except Exception as e:
+        print_error(f"主API文档: 异常 - {e}")
+
+    # 测试各个端点的GET文档功能
     endpoints = [
-        ("convert", "图片转换API文档", ["endpoint", "method", "description"]),
-        ("palette", "调色板API文档", ["success", "data"]),
-        ("download", "下载API文档", ["endpoint", "method", "description"]),
-        ("status", "状态API文档", ["service", "status", "version"])
+        ("convert", "图片转换API文档", lambda d: "endpoint" in d and "method" in d),
+        ("palette", "调色板API文档", lambda d: "success" in d and "data" in d),
+        ("download", "下载API文档", lambda d: "endpoint" in d and "method" in d),
+        ("status", "状态API文档", lambda d: "service" in d and "status" in d)
     ]
 
     docs_available = 0
+    total_endpoints = len(endpoints)
 
-    for endpoint, description, expected_fields in endpoints:
+    for endpoint, description, validator in endpoints:
         try:
+            start_time = time.time()
             response = requests.get(f"{BASE_URL}/{endpoint}")
+            response_time = (time.time() - start_time) * 1000
+
+            print(f"\n🌐 GET {BASE_URL}/{endpoint}")
+            print(f"⏱️  响应时间: {response_time:.2f}ms")
+            print(f"📊 状态码: {response.status_code}")
+
             if response.status_code == 200:
                 data = response.json()
-                # 检查是否包含预期的字段
-                has_expected_fields = any(field in data for field in expected_fields)
-                if has_expected_fields:
-                    print_success(f"{description}: 可用")
+                if validator(data):
+                    print_success(f"{description}: 可用且格式正确")
                     docs_available += 1
+
+                    # 显示一些关键信息
+                    if endpoint == "convert":
+                        print(f"   📝 描述: {data.get('description', 'N/A')}")
+                        params = data.get('parameters', {})
+                        print(f"   🔧 参数数: {len(params)}")
+                    elif endpoint == "palette":
+                        palette_data = data.get('data', {})
+                        print(f"   🎨 调色板数: {len(palette_data.get('availablePalettes', []))}")
+                        print(f"   🌈 总颜色数: {palette_data.get('totalColors', 'N/A')}")
+                    elif endpoint == "download":
+                        print(f"   📝 描述: {data.get('description', 'N/A')}")
+                        params = data.get('parameters', {})
+                        print(f"   🔧 参数数: {len(params)}")
+                    elif endpoint == "status":
+                        print(f"   🚀 服务: {data.get('service', 'N/A')}")
+                        print(f"   📊 状态: {data.get('status', 'N/A')}")
+                        print(f"   ⏰ 运行时间: {data.get('uptime', 0):.2f}s")
                 else:
-                    print_info(f"{description}: 数据格式不标准")
+                    print_info(f"{description}: 可用但格式需改进")
             else:
-                print_info(f"{description}: HTTP {response.status_code}")
+                print_error(f"{description}: HTTP {response.status_code}")
         except Exception as e:
             print_error(f"{description}: 异常 - {e}")
 
-    print(f"\n📊 文档端点可用性: {docs_available}/{len(endpoints)}")
-    return docs_available == len(endpoints)
+    print(f"\n📊 GET文档端点可用性: {docs_available}/{total_endpoints}")
+    return docs_available == total_endpoints
 
 def main():
     """主函数"""
