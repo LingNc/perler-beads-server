@@ -362,6 +362,10 @@ def test_pattern_download(convert_data, output_filename, test_options=None):
             print(f"   📝 标题: {download_options['title']}")
         if 'dpi' in download_options:
             print(f"   🔍 DPI: {download_options['dpi']}")
+        if 'renderMode' in download_options:
+            print(f"   🎨 渲染模式: {download_options['renderMode']}")
+        if 'fixedWidth' in download_options:
+            print(f"   📏 固定宽度: {download_options['fixedWidth']}px")
         print(f"   📐 网格: {download_options['showGrid']}")
         print(f"   📊 统计: {download_options['includeStats']}")
 
@@ -401,7 +405,7 @@ def test_pattern_download(convert_data, output_filename, test_options=None):
 
 def test_download_with_title_and_dpi(default_convert_data, custom_convert_data):
     """测试带标题和DPI的下载功能"""
-    print_step("6.5", "测试标题和DPI功能")
+    print_step("6.5", "测试标题、DPI和渲染模式功能")
 
     if not default_convert_data and not custom_convert_data:
         print_error("没有可用的转换数据，跳过标题和DPI测试")
@@ -419,22 +423,32 @@ def test_download_with_title_and_dpi(default_convert_data, custom_convert_data):
         {
             "name": "标准DPI无标题",
             "filename": "test_standard_dpi.png",
-            "options": {"dpi": 150}
+            "options": {"dpi": 150, "renderMode": "dpi"}
         },
         {
             "name": "高DPI有标题",
             "filename": "test_high_dpi_with_title.png",
-            "options": {"dpi": 300, "title": "测试拼豆图纸"}
+            "options": {"dpi": 300, "title": "测试拼豆图纸", "renderMode": "dpi"}
         },
         {
             "name": "低DPI长标题",
             "filename": "test_low_dpi_long_title.png",
-            "options": {"dpi": 72, "title": "这是一个很长的拼豆图纸标题用来测试布局"}
+            "options": {"dpi": 72, "title": "这是一个很长的拼豆图纸标题用来测试布局", "renderMode": "dpi"}
         },
         {
-            "name": "超高DPI短标题",
-            "filename": "test_ultra_high_dpi.png",
-            "options": {"dpi": 600, "title": "高清图纸"}
+            "name": "固定宽度800px",
+            "filename": "test_fixed_width_800.png",
+            "options": {"renderMode": "fixed", "fixedWidth": 800, "title": "固定宽度800px"}
+        },
+        {
+            "name": "固定宽度1200px",
+            "filename": "test_fixed_width_1200.png",
+            "options": {"renderMode": "fixed", "fixedWidth": 1200, "title": "固定宽度1200px"}
+        },
+        {
+            "name": "固定宽度600px小图",
+            "filename": "test_fixed_width_600.png",
+            "options": {"renderMode": "fixed", "fixedWidth": 600, "title": "小尺寸固定宽度"}
         }
     ]
 
@@ -449,7 +463,7 @@ def test_download_with_title_and_dpi(default_convert_data, custom_convert_data):
         if success:
             success_count += 1
 
-    print(f"\n📊 标题和DPI测试: {success_count}/{len(test_cases)} 通过")
+    print(f"\n📊 标题、DPI和渲染模式测试: {success_count}/{len(test_cases)} 通过")
     return success_count == len(test_cases)
 
 def test_api_documentation():

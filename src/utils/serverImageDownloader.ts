@@ -80,7 +80,9 @@ export async function generateImageBuffer({
   activeBeadPalette,
   selectedColorSystem,
   title,
-  dpi = 150
+  dpi = 150,
+  renderMode = 'dpi',
+  fixedWidth
 }: {
   mappedPixelData: MappedPixel[][] | null;
   gridDimensions: { N: number; M: number } | null;
@@ -91,6 +93,8 @@ export async function generateImageBuffer({
   selectedColorSystem: ColorSystem;
   title?: string;
   dpi?: number;
+  renderMode?: 'dpi' | 'fixed';
+  fixedWidth?: number;
 }): Promise<Buffer> {
 
   if (!mappedPixelData || !gridDimensions || gridDimensions.N === 0 || gridDimensions.M === 0 || activeBeadPalette.length === 0) {
@@ -101,13 +105,28 @@ export async function generateImageBuffer({
   }
 
   const { N, M } = gridDimensions;
-  // 根据DPI调整基础单元格大小
-  const baseCellSize = 30;
-  const dpiScale = dpi / 150; // 以150为基准DPI
-  const downloadCellSize = Math.round(baseCellSize * dpiScale);
 
   // 从下载选项中获取设置
   const { showGrid, gridInterval, showCoordinates, gridLineColor, includeStats } = options;
+
+  // 根据渲染模式计算基础单元格大小
+  let downloadCellSize: number;
+  let dpiScale: number;
+
+  if (renderMode === 'fixed' && fixedWidth) {
+    // 固定宽度模式：根据指定宽度计算单元格大小
+    const gridWidthCells = N;
+    const axisSpace = showCoordinates ? Math.max(30, 20) : 0;
+    const margins = 70; // 左右边距估算
+    const availableWidth = fixedWidth - axisSpace - margins;
+    downloadCellSize = Math.max(10, Math.floor(availableWidth / gridWidthCells));
+    dpiScale = downloadCellSize / 30; // 以30为基准
+  } else {
+    // DPI模式：根据DPI调整基础单元格大小
+    const baseCellSize = 30;
+    dpiScale = dpi / 150; // 以150为基准DPI
+    downloadCellSize = Math.round(baseCellSize * dpiScale);
+  }
 
   // 设置边距空间用于坐标轴标注（如果需要）
   const axisLabelSize = showCoordinates ? Math.max(30 * dpiScale, Math.floor(downloadCellSize)) : 0;
@@ -134,8 +153,8 @@ export async function generateImageBuffer({
   const gridWidth = N * downloadCellSize;
   const gridHeight = M * downloadCellSize;
 
-  // 添加标题栏
-  const titleBarHeight = title ? 100 * dpiScale : 0; // 增加标题栏高度
+  // 添加标题栏 - 增加高度，使标题更加突出
+  const titleBarHeight = title ? 180 * dpiScale : 0; // 从140增加到180
 
   // 计算统计区域的大小
   if (includeStats && colorCounts) {
@@ -186,7 +205,7 @@ export async function generateImageBuffer({
   if (title && titleBarHeight > 0) {
     // 不绘制背景色，直接绘制标题文字
     ctx.fillStyle = '#1F2937';
-    ctx.font = `bold ${Math.floor(24 * dpiScale)}px sans-serif`; // 稍微增大字体
+    ctx.font = `bold ${Math.floor(28 * dpiScale)}px sans-serif`; // 增大字体
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(title, offsetX + contentWidth / 2, offsetY + titleBarHeight / 2);

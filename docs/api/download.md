@@ -66,8 +66,10 @@
 | `gridLineColor` | string | "#CCCCCC" | - | 网格线颜色 |
 | `includeStats` | boolean | true | - | 包含统计信息 |
 | `filename` | string | 自动生成 | - | 文件名 |
-| `title` | string | - | - | **NEW** 图纸标题 |
-| `dpi` | number | 150 | 72-600 | **NEW** 图片分辨率 |
+| `title` | string | - | - | **NEW** 图纸标题（高度已增加） |
+| `dpi` | number | 150 | 72-600 | **NEW** 图片分辨率（DPI模式） |
+| `renderMode` | string | "dpi" | "dpi"\|"fixed" | **NEW** 渲染模式 |
+| `fixedWidth` | number | - | >0 | **NEW** 固定宽度（像素，fixed模式） |
 
 ### 新功能说明
 
@@ -78,6 +80,7 @@
 - **字体**: 粗体，大小根据DPI和画布宽度自动缩放
 - **示例**: `"title": "我的拼豆图纸"`
 - **注意**: 如果不提供title参数，则不显示标题栏
+- **更新**: 标题栏高度已从140增加到180，使标题更加突出
 
 #### 🆕 DPI功能 (`dpi`)
 - **描述**: 控制生成图片的分辨率，影响图片清晰度和文件大小
@@ -89,6 +92,23 @@
   - **600 DPI**: 专业打印，文件很大
 - **影响**: 所有元素（单元格、文字、边距）都会按DPI比例缩放
 - **示例**: `"dpi": 300`
+- **注意**: 仅在DPI模式下使用
+
+#### 🆕 渲染模式功能 (`renderMode`)
+- **描述**: 选择图片渲染的计算方式
+- **默认值**: `"dpi"`
+- **可选值**:
+  - **`"dpi"`**: DPI模式 - 基于DPI设置图片分辨率，适用于需要特定分辨率的场景
+  - **`"fixed"`**: 固定宽度模式 - 根据指定的像素宽度渲染，系统自动计算单元格大小
+- **示例**: `"renderMode": "fixed"`
+
+#### 🆕 固定宽度功能 (`fixedWidth`)
+- **描述**: 在固定宽度模式下指定图片的横向像素宽度
+- **单位**: 像素
+- **使用条件**: 仅在 `renderMode: "fixed"` 时生效
+- **计算**: 系统会根据指定宽度和网格数量自动计算最合适的单元格大小
+- **示例**: `"fixedWidth": 1200`
+- **注意**: 如果未指定且为fixed模式，将自动回退到DPI模式
 
 ### 请求示例
 
@@ -132,7 +152,45 @@
     "includeStats": true,
     "filename": "my_pattern",
     "title": "我的拼豆图纸 - 爱心图案",
+    "renderMode": "dpi",
     "dpi": 300
+  }
+}
+```
+
+#### DPI模式请求（基于DPI）
+```json
+{
+  "pixelData": "...",
+  "gridDimensions": "...",
+  "colorCounts": "...",
+  "totalBeadCount": 625,
+  "activeBeadPalette": "...",
+  "selectedColorSystem": "MARD",
+  "downloadOptions": {
+    "title": "高分辨率拼豆图纸",
+    "renderMode": "dpi",
+    "dpi": 300,
+    "showGrid": true
+  }
+}
+```
+
+#### 固定宽度模式请求
+```json
+{
+  "pixelData": "...",
+  "gridDimensions": "...",
+  "colorCounts": "...",
+  "totalBeadCount": 625,
+  "activeBeadPalette": "...",
+  "selectedColorSystem": "MARD",
+  "downloadOptions": {
+    "title": "固定宽度拼豆图纸",
+    "renderMode": "fixed",
+    "fixedWidth": 1200,
+    "showGrid": true,
+    "showCoordinates": true
   }
 }
 ```
@@ -169,11 +227,30 @@
 
 ### 使用建议
 
+#### 模式选择
+- **DPI模式** (`renderMode: "dpi"`):
+  - 适用于需要特定分辨率的场景（如打印）
+  - 通过DPI控制图片质量
+  - 文件大小可预测
+- **固定宽度模式** (`renderMode: "fixed"`):
+  - 适用于需要固定尺寸的场景（如网页显示）
+  - 图片宽度固定，高度自适应
+  - 单元格大小自动计算
+
+#### DPI建议（DPI模式）
 1. **网页预览**: 使用72-150 DPI
 2. **家用打印**: 使用200-300 DPI
 3. **专业打印**: 使用300-600 DPI
-4. **标题长度**: 建议不超过30个字符以确保良好显示
-5. **文件大小**: 高DPI会显著增加文件大小，请根据需要选择
+
+#### 固定宽度建议（Fixed模式）
+1. **移动端显示**: 800-1000像素
+2. **桌面端显示**: 1200-1600像素
+3. **高分辨率显示**: 1920像素以上
+
+#### 通用建议
+1. **标题长度**: 建议不超过30个字符以确保良好显示
+2. **文件大小**: 高DPI和大尺寸会显著增加文件大小，请根据需要选择
+3. **网格间隔**: 建议使用5或10的间隔值，便于查看和制作
 
 ### 测试端点
 

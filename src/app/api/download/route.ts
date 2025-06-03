@@ -15,6 +15,8 @@ interface DownloadOptions {
   filename?: string;
   title?: string;
   dpi?: number;
+  renderMode?: 'dpi' | 'fixed';  // 渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式
+  fixedWidth?: number;           // 固定宽度（像素）
 }
 
 export async function POST(request: NextRequest) {
@@ -47,6 +49,8 @@ export async function POST(request: NextRequest) {
       includeStats: true,
       title: downloadOptions.title,
       dpi: downloadOptions.dpi || 150,
+      renderMode: downloadOptions.renderMode || 'dpi',
+      fixedWidth: downloadOptions.fixedWidth,
       ...downloadOptions
     };
 
@@ -60,7 +64,9 @@ export async function POST(request: NextRequest) {
       activeBeadPalette,
       selectedColorSystem,
       title: options.title,
-      dpi: options.dpi
+      dpi: options.dpi,
+      renderMode: options.renderMode,
+      fixedWidth: options.fixedWidth
     });
 
     // 生成文件名
@@ -111,14 +117,58 @@ export async function GET() {
         gridLineColor: { type: 'string', default: '#CCCCCC', description: '网格线颜色' },
         includeStats: { type: 'boolean', default: true, description: '包含统计信息' },
         filename: { type: 'string', description: '自定义文件名' },
-        title: { type: 'string', description: '图纸标题' },
-        dpi: { type: 'number', default: 150, description: '图片分辨率 (DPI)' }
+        title: { type: 'string', description: '图纸标题 - 显示在图片顶部的标题栏中，高度已增加' },
+        dpi: { type: 'number', default: 150, description: '图片分辨率 (DPI) - DPI模式下使用' },
+        renderMode: {
+          type: 'string',
+          default: 'dpi',
+          enum: ['dpi', 'fixed'],
+          description: '渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式'
+        },
+        fixedWidth: {
+          type: 'number',
+          description: '固定宽度（像素）- fixed模式下必需，指定图片的横向宽度'
+        }
+      }
+    },
+    renderModes: {
+      dpi: {
+        description: 'DPI模式 - 基于DPI设置图片分辨率',
+        parameters: ['dpi'],
+        defaultDpi: 150,
+        usage: '适用于需要特定分辨率的场景，如打印等'
+      },
+      fixed: {
+        description: '固定宽度模式 - 根据指定的像素宽度渲染',
+        parameters: ['fixedWidth'],
+        usage: '适用于需要固定尺寸的场景，系统会自动计算单元格大小',
+        note: '如果未指定fixedWidth，将自动使用默认DPI模式'
       }
     },
     response: {
       contentType: 'image/png',
       headers: {
         'Content-Disposition': 'attachment; filename="..."'
+      }
+    },
+    examples: {
+      dpiMode: {
+        description: 'DPI模式示例 - 使用DPI控制分辨率',
+        downloadOptions: {
+          title: '我的拼豆图纸',
+          renderMode: 'dpi',
+          dpi: 300,
+          showGrid: true
+        }
+      },
+      fixedMode: {
+        description: '固定宽度模式示例 - 指定图片宽度',
+        downloadOptions: {
+          title: '我的拼豆图纸',
+          renderMode: 'fixed',
+          fixedWidth: 1200,
+          showGrid: true
+        }
       }
     }
   });
