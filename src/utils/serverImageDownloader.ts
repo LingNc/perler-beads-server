@@ -151,8 +151,8 @@ export async function generateImageBuffer({
   const gridWidth = N * downloadCellSize;
   const gridHeight = M * downloadCellSize;
 
-  // 添加标题栏 - 增加高度，使标题更加突出
-  const titleBarHeight = title ? 180 * dpiScale : 0; // 从140增加到180
+  // 添加适当高度的标题栏
+  const titleBarHeight = title ? 80 * dpiScale : 0; // 减小高度，使布局更紧凑
 
   // 计算统计区域的大小
   if (includeStats && colorCounts) {
@@ -170,26 +170,17 @@ export async function generateImageBuffer({
     statsHeight = titleHeight + (numRows * statsRowHeight) + footerHeight + (statsPadding * 2) + statsTopMargin;
   }
 
-  // 计算基础内容尺寸
+  // 计算基础内容尺寸 - 不再按固定比例调整，而是根据内容自然布局
   const contentWidth = gridWidth + axisLabelSize + extraLeftMargin + extraRightMargin;
   const contentHeight = titleBarHeight + gridHeight + axisLabelSize + statsHeight + extraTopMargin + extraBottomMargin;
 
-  // 按扑克牌比例(0.65)调整画布尺寸
-  const targetRatio = 0.65;
+  // 直接使用内容尺寸，不再强制调整比例
   let downloadWidth = contentWidth;
   let downloadHeight = contentHeight;
 
-  const currentRatio = contentWidth / contentHeight;
-
-  if (currentRatio > targetRatio) {
-    downloadHeight = contentWidth / targetRatio;
-  } else {
-    downloadWidth = contentHeight * targetRatio;
-  }
-
-  // 计算居中偏移量
-  const offsetX = (downloadWidth - contentWidth) / 2;
-  const offsetY = (downloadHeight - contentHeight) / 2;
+  // 计算偏移量 - 由于不再调整图片比例，这里的偏移量实际上是0
+  const offsetX = 0;
+  const offsetY = 0;
 
   // 创建 Node.js Canvas
   const canvas = createCanvas(downloadWidth, downloadHeight);
@@ -203,7 +194,7 @@ export async function generateImageBuffer({
   if (title && titleBarHeight > 0) {
     // 不绘制背景色，直接绘制标题文字
     ctx.fillStyle = '#1F2937';
-    ctx.font = `bold ${Math.floor(28 * dpiScale)}px sans-serif`; // 增大字体
+    ctx.font = `bold ${Math.floor(24 * dpiScale)}px sans-serif`; // 适当调整字体大小
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(title, offsetX + contentWidth / 2, offsetY + titleBarHeight / 2);
@@ -296,8 +287,10 @@ export async function generateImageBuffer({
     const colorKeys = Object.keys(colorCounts);
     const sortedColorKeys = colorKeys.sort(sortColorKeys);
 
-    const statsStartY = offsetY + titleBarHeight + extraTopMargin + gridHeight + axisLabelSize + 24 * dpiScale;
+    // 调整统计区域的起始位置，使布局更紧凑
+    const statsStartY = offsetY + titleBarHeight + extraTopMargin + gridHeight + axisLabelSize + 16 * dpiScale;
     const availableWidth = contentWidth - (statsPadding * 2);
+    // 根据可用宽度自动计算列数
     const numColumns = Math.max(1, Math.min(4, Math.floor(availableWidth / (250 * dpiScale))));
     const swatchSize = Math.floor(18 * dpiScale + (widthFactor * 20 * dpiScale));
 
