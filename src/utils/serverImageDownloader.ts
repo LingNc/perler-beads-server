@@ -194,7 +194,8 @@ export async function generateImageBuffer({
   if (title && titleBarHeight > 0) {
     // 不绘制背景色，直接绘制标题文字
     ctx.fillStyle = '#1F2937';
-    ctx.font = `bold ${Math.floor(24 * dpiScale)}px sans-serif`; // 适当调整字体大小
+    // 指定多种字体，包括支持中文的字体
+    ctx.font = `bold ${Math.floor(24 * dpiScale)}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(title, offsetX + contentWidth / 2, offsetY + titleBarHeight / 2);
@@ -310,7 +311,7 @@ export async function generateImageBuffer({
     }
 
     ctx.fillStyle = '#333333';
-    ctx.font = `bold ${statsFontSize + 2 * dpiScale}px sans-serif`;
+    ctx.font = `bold ${statsFontSize + 2 * dpiScale}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText('珠子用量统计', statsLeftAlign, statsStartY);
@@ -342,13 +343,15 @@ export async function generateImageBuffer({
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       const displayKey = getDisplayColorKey(colorData.color, selectedColorSystem);
+      // 使用支持中文的字体
+      ctx.font = `${statsFontSize}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
       ctx.fillText(`${displayKey}: ${colorData.count}`, itemX + swatchSize + 8 * dpiScale, itemY + 2 * dpiScale);
     });
 
     // 总计
     const totalY = itemStartY + Math.ceil(sortedColorKeys.length / numColumns) * 30 * dpiScale + 20 * dpiScale;
     ctx.fillStyle = '#333333';
-    ctx.font = `bold ${statsFontSize + 1 * dpiScale}px sans-serif`;
+    ctx.font = `bold ${statsFontSize + 1 * dpiScale}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
     ctx.fillText(`总计: ${totalBeadCount} 颗珠子`, statsLeftAlign, totalY);
   }
 
