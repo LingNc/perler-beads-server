@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateImageBuffer } from '../../../utils/serverImageDownloader';
 import { GridDownloadOptions } from '../../../types/downloadTypes';
+import { filterColorCountsForBeadUsage } from '../../../utils/apiUtils';
 
 // 下载选项类型定义
 
@@ -11,7 +12,6 @@ export async function POST(request: NextRequest) {
       pixelData,
       gridDimensions,
       colorCounts,
-      totalBeadCount,
       selectedColorSystem,
       downloadOptions = {}
     } = body;
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       showCoordinates: true,
       gridLineColor: '#CCCCCC',
       includeStats: true,
+      showTransparentLabels: false, // 默认不显示透明色标识
       title: downloadOptions.title,
       dpi: downloadOptions.dpi || 150,
       renderMode: downloadOptions.renderMode || 'dpi',
@@ -38,12 +39,19 @@ export async function POST(request: NextRequest) {
       ...downloadOptions
     };
 
+    // 如果不显示透明标识，则从统计中排除 T01 透明色
+    const { filteredCounts, filteredTotal } = filterColorCountsForBeadUsage(
+      colorCounts,
+      selectedColorSystem,
+      !options.showTransparentLabels
+    );
+
     // 使用原项目的图片生成功能
     const imageBuffer = await generateImageBuffer({
       mappedPixelData: pixelData,
       gridDimensions,
-      colorCounts,
-      totalBeadCount,
+      colorCounts: filteredCounts,
+      totalBeadCount: filteredTotal,
       options,
       selectedColorSystem,
       title: options.title,

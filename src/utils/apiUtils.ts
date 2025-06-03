@@ -1,7 +1,7 @@
 // API工具函数
 import { createCanvas, loadImage, Image, Canvas, CanvasRenderingContext2D } from 'canvas';
 import { PixelationMode, PaletteColor, MappedPixel, hexToRgb } from './pixelation';
-import { getMardToHexMapping } from './colorSystemUtils';
+import { getMardToHexMapping, getColorKeyByHex, ColorSystem } from './colorSystemUtils';
 
 // 获取调色板数据
 export function getPaletteByName(): PaletteColor[] {
@@ -156,4 +156,52 @@ export function generateFilename(params: {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const { granularity, pixelationMode, selectedPalette } = params;
   return `perler-beads-${granularity}px-${pixelationMode}-${selectedPalette}-${timestamp}`;
+}
+
+// 过滤透明色统计
+export function filterTransparentColorCounts(colorCounts: { [key: string]: { count: number; color: string } }, showTransparentLabels: boolean): { [key: string]: { count: number; color: string } } {
+  if (showTransparentLabels) {
+    return colorCounts;
+  }
+
+  const filteredCounts: { [key: string]: { count: number; color: string } } = {};
+
+  for (const key in colorCounts) {
+    if (colorCounts.hasOwnProperty(key)) {
+      const colorInfo = colorCounts[key];
+      // 过滤掉T01透明色
+      if (key !== 'T01') {
+        filteredCounts[key] = colorInfo;
+      }
+    }
+  }
+
+  return filteredCounts;
+}
+
+// 过滤颜色统计，排除 T01 透明色（当 showTransparentLabels 为 false 时）
+export function filterColorCountsForBeadUsage(
+  colorCounts: { [key: string]: { count: number; color: string } },
+  selectedColorSystem: ColorSystem,
+  excludeTransparent: boolean = true
+): { filteredCounts: { [key: string]: { count: number; color: string } }; filteredTotal: number } {
+  if (!excludeTransparent) {
+    const total = Object.values(colorCounts).reduce((sum, { count }) => sum + count, 0);
+    return { filteredCounts: colorCounts, filteredTotal: total };
+  }
+
+  const filteredCounts: { [key: string]: { count: number; color: string } } = {};
+  let filteredTotal = 0;
+
+  for (const [hexColor, colorData] of Object.entries(colorCounts)) {
+    const colorKey = getColorKeyByHex(hexColor, selectedColorSystem);
+
+    // 如果不是 T01 透明色，则包含在统计中
+    if (colorKey !== 'T01') {
+      filteredCounts[hexColor] = colorData;
+      filteredTotal += colorData.count;
+    }
+  }
+
+  return { filteredCounts, filteredTotal };
 }

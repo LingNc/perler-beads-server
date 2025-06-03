@@ -1,7 +1,7 @@
 // 服务器端图片生成器 - 基于 imageDownloader.ts 适配
 import { GridDownloadOptions } from '../types/downloadTypes';
 import { MappedPixel } from './pixelation';
-import { getDisplayColorKey, ColorSystem } from './colorSystemUtils';
+import { getDisplayColorKey, getColorKeyByHex, ColorSystem } from './colorSystemUtils';
 import { createCanvas } from 'canvas';
 
 // 用于获取对比色的工具函数
@@ -81,7 +81,7 @@ export async function generateImageBuffer({
   const { N, M } = gridDimensions;
 
   // 从下载选项中获取设置
-  const { showGrid, gridInterval, showCoordinates, gridLineColor, includeStats } = options;
+  const { showGrid, gridInterval, showCoordinates, gridLineColor, includeStats, showTransparentLabels } = options;
 
   // 根据渲染模式计算基础单元格大小
   let downloadCellSize: number;
@@ -220,8 +220,15 @@ export async function generateImageBuffer({
         ctx.fillStyle = cellColor;
         ctx.fillRect(drawX, drawY, downloadCellSize, downloadCellSize);
 
-        ctx.fillStyle = getContrastColor(cellColor);
-        ctx.fillText(cellKey, drawX + downloadCellSize / 2, drawY + downloadCellSize / 2);
+        // 检查是否是T01透明色，以及是否应该显示字体
+        const colorKey = getColorKeyByHex(cellColor, selectedColorSystem);
+        const isT01Transparent = colorKey === 'T01';
+        const shouldShowLabel = !isT01Transparent || (isT01Transparent && showTransparentLabels);
+
+        if (shouldShowLabel) {
+          ctx.fillStyle = getContrastColor(cellColor);
+          ctx.fillText(cellKey, drawX + downloadCellSize / 2, drawY + downloadCellSize / 2);
+        }
       } else {
         // 外部背景：填充白色
         ctx.fillStyle = '#FFFFFF';

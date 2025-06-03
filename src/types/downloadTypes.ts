@@ -9,4 +9,5 @@ export type GridDownloadOptions = {
   dpi?: number;
   renderMode?: 'dpi' | 'fixed';  // 渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式
   fixedWidth?: number;           // 固定宽度（像素）
+  showTransparentLabels?: boolean; // 是否在T01透明色上显示字体标识
 };
