@@ -7,6 +7,18 @@ export enum PixelationMode {
 // 定义色号系统类型
 export type ColorSystem = 'MARD' | 'COCO' | '漫漫' | '盼盼' | '咪小窝';
 
+// 兼容Node.js Canvas的ImageData类型
+interface CompatibleImageData {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+}
+
+// 兼容Node.js Canvas的上下文类型
+type CompatibleContext = {
+  getImageData(x: number, y: number, width: number, height: number): CompatibleImageData;
+};
+
 // --- 必要的类型定义 ---
 export interface RgbColor {
   r: number;
@@ -85,7 +97,7 @@ export function findClosestPaletteColor(
  * @returns 代表色的 RGB 对象，或 null（如果区域无效或全透明）
  */
 function calculateCellRepresentativeColor(
-    imageData: ImageData,
+    imageData: CompatibleImageData,
     startX: number,
     startY: number,
     width: number,
@@ -158,7 +170,7 @@ function calculateCellRepresentativeColor(
  * @returns 计算后的 MappedPixel 网格数据
  */
 export function calculatePixelGrid(
-    originalCtx: CanvasRenderingContext2D,
+    originalCtx: CompatibleContext,
     imgWidth: number,
     imgHeight: number,
     N: number,
@@ -172,12 +184,17 @@ export function calculatePixelGrid(
     const cellWidthOriginal = imgWidth / N;
     const cellHeightOriginal = imgHeight / M;
 
-    let fullImageData: ImageData | null = null;
+    let fullImageData: CompatibleImageData | null = null;
     try {
         fullImageData = originalCtx.getImageData(0, 0, imgWidth, imgHeight);
     } catch (e) {
         console.error("Failed to get full image data:", e);
         // 如果无法获取图像数据，返回一个空的或默认的网格
+        return mappedData;
+    }
+
+    if (!fullImageData) {
+        console.error("No image data available");
         return mappedData;
     }
 
@@ -194,7 +211,7 @@ export function calculatePixelGrid(
 
             // 使用提取的函数计算代表色
             const representativeRgb = calculateCellRepresentativeColor(
-                fullImageData,
+                fullImageData, // 现在已经确保不为null
                 startXOriginal,
                 startYOriginal,
                 currentCellWidth,
@@ -215,4 +232,4 @@ export function calculatePixelGrid(
     }
     console.log(`Pixel grid calculation complete for mode: ${mode}`);
     return mappedData;
-} 
+}

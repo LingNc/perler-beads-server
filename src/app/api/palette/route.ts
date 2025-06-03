@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // 支持新格式：{ version: "3.0", selectedHexValues: ["#RRGGBB", ...] }
     if (customPalette && customPalette.selectedHexValues) {
-      const { selectedHexValues, version, totalColors } = customPalette;
+      const { selectedHexValues } = customPalette;
 
       if (!Array.isArray(selectedHexValues)) {
         return NextResponse.json({
@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         data: {
           validatedColors: validatedColors,
           totalColors: validatedColors.length,
-          version: version,
+          version: '3.0',
           message: '自定义调色板验证成功'
         }
       });

@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateImageBuffer } from '../../../utils/serverImageDownloader';
-import { generateFilename } from '../../../utils/apiUtils';
 import { GridDownloadOptions } from '../../../types/downloadTypes';
-import { MappedPixel, PaletteColor } from '../../../utils/pixelation';
-import { ColorSystem } from '../../../utils/colorSystemUtils';
 
 // 下载选项类型定义
-interface DownloadOptions {
-  showGrid?: boolean;
-  gridInterval?: number;
-  showCoordinates?: boolean;
-  gridLineColor?: string;
-  includeStats?: boolean;
-  filename?: string;
-  title?: string;
-  dpi?: number;
-  renderMode?: 'dpi' | 'fixed';  // 渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式
-  fixedWidth?: number;           // 固定宽度（像素）
-}
 
 export async function POST(request: NextRequest) {
   try {

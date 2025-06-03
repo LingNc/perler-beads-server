@@ -1,10 +1,8 @@
 // 服务器端图片生成器 - 基于 imageDownloader.ts 适配
 import { GridDownloadOptions } from '../types/downloadTypes';
-import { MappedPixel, PaletteColor } from './pixelation';
-import { getDisplayColorKey, getColorKeyByHex, ColorSystem } from './colorSystemUtils';
-import { createCanvas, loadImage, CanvasRenderingContext2D } from 'canvas';
-import fs from 'fs';
-import path from 'path';
+import { MappedPixel } from './pixelation';
+import { getDisplayColorKey, ColorSystem } from './colorSystemUtils';
+import { createCanvas } from 'canvas';
 
 // 用于获取对比色的工具函数
 function getContrastColor(hex: string): string {
@@ -46,28 +44,6 @@ function sortColorKeys(a: string, b: string): number {
     return numA - numB;
   }
   return a.localeCompare(b);
-}
-
-// Node.js Canvas 的 roundRect 兼容性实现
-function drawRoundRect(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  radius: number
-) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
-  ctx.closePath();
 }
 
 // 服务器端下载图片的主函数 - 返回 Buffer 而不是下载文件
@@ -175,8 +151,8 @@ export async function generateImageBuffer({
   const contentHeight = titleBarHeight + gridHeight + axisLabelSize + statsHeight + extraTopMargin + extraBottomMargin;
 
   // 直接使用内容尺寸，不再强制调整比例
-  let downloadWidth = contentWidth;
-  let downloadHeight = contentHeight;
+  const downloadWidth = contentWidth;
+  const downloadHeight = contentHeight;
 
   // 计算偏移量 - 由于不再调整图片比例，这里的偏移量实际上是0
   const offsetX = 0;
