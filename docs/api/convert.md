@@ -36,7 +36,7 @@
       "pixelData": "MappedPixel[][]",
       "colorCounts": "{ [key: string]: { count: number, color: string } }",
       "totalBeadCount": "number",
-      "activeBeadPalette": "array",
+      "activeBeadPalette": "string (调色板名称)",
       "processingParams": "object",
       "imageInfo": "object"
     }
@@ -110,10 +110,7 @@
       "#E7002F": {"count": 325, "color": "#E7002F"}
     },
     "totalBeadCount": 625,
-    "activeBeadPalette": [
-      {"key": "#FFFFFF", "color": "#FFFFFF"},
-      {"key": "#E7002F", "color": "#E7002F"}
-    ],
+    "activeBeadPalette": "291色",
     "processingParams": {
       "granularity": 50,
       "similarityThreshold": 30,
@@ -131,6 +128,12 @@
 }
 ```
 
+> **API更新说明:**
+> - `activeBeadPalette` 参数格式已更改：原先返回颜色数组，现在仅返回调色板名称字符串
+> - 此更改减少了API响应大小，提高了效率
+> - 下载API已不再需要调色板信息，因为所有颜色映射在转换阶段已完成
+```
+
 ### 错误响应
 
 | 状态码 | 错误 | 说明 |
@@ -139,28 +142,3 @@
 | 400 | 参数范围错误 | granularity不在1-200范围内 |
 | 400 | 自定义调色板格式错误 | JSON格式无效 |
 | 500 | 图片处理失败 | 文件损坏或不支持的格式 |
-
-## GET `/api/convert`
-
-获取API文档信息。
-
-### 响应
-
-```json
-{
-  "endpoint": "/api/convert",
-  "method": "POST",
-  "description": "将图片转换为拼豆图纸",
-  "parameters": {
-    "image": {
-      "type": "File",
-      "required": true,
-      "description": "要转换的图片文件"
-    }
-  },
-  "notes": [
-    "支持自定义调色板",
-    "默认使用291色调色板"
-  ]
-}
-```

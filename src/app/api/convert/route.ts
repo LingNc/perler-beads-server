@@ -102,11 +102,8 @@ export async function POST(request: NextRequest) {
     // 计算总珠子数量
     const totalBeadCount = Object.values(colorCounts).reduce((sum, { count }) => sum + count, 0);
 
-    // 生成activeBeadPalette - 从实际使用的颜色中构建
-    const activeBeadPalette = palette.map(color => ({
-      key: color.key,
-      color: color.hex
-    }));
+    // 只返回调色板名称，而不是完整的颜色信息
+    const activeBeadPalette = selectedPalette;
 
     return NextResponse.json({
       success: true,
@@ -177,7 +174,7 @@ export async function GET() {
         pixelData: 'MappedPixel[][]',
         colorCounts: '{ [key: string]: { count: number, color: string } }',
         totalBeadCount: 'number',
-        activeBeadPalette: 'array',
+        activeBeadPalette: 'string (调色板名称)',
         processingParams: 'object (包含paletteSource和customPaletteColors)',
         imageInfo: 'object'
       }

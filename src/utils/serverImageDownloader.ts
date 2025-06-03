@@ -77,7 +77,6 @@ export async function generateImageBuffer({
   colorCounts,
   totalBeadCount,
   options,
-  activeBeadPalette,
   selectedColorSystem,
   title,
   dpi = 150,
@@ -89,7 +88,6 @@ export async function generateImageBuffer({
   colorCounts: { [key: string]: { count: number; color: string } } | null;
   totalBeadCount: number;
   options: GridDownloadOptions;
-  activeBeadPalette: PaletteColor[];
   selectedColorSystem: ColorSystem;
   title?: string;
   dpi?: number;
@@ -97,7 +95,7 @@ export async function generateImageBuffer({
   fixedWidth?: number;
 }): Promise<Buffer> {
 
-  if (!mappedPixelData || !gridDimensions || gridDimensions.N === 0 || gridDimensions.M === 0 || activeBeadPalette.length === 0) {
+  if (!mappedPixelData || !gridDimensions || gridDimensions.N === 0 || gridDimensions.M === 0) {
     throw new Error("下载失败: 映射数据或尺寸无效。");
   }
   if (!colorCounts) {

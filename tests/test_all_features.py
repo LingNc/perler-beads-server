@@ -302,6 +302,13 @@ def test_image_conversion_custom_palette(custom_palette):
             print(f"🔢 总珠子数: {data['totalBeadCount']}")
             print(f"🎨 使用颜色数: {len(data['colorCounts'])}")
 
+            # 检查activeBeadPalette格式是否为字符串
+            active_palette = data['activeBeadPalette']
+            is_string = isinstance(active_palette, str)
+            print(f"🎨 活动调色板: {active_palette} (是字符串: {is_string})")
+            if not is_string:
+                print_error("警告: activeBeadPalette不是字符串格式，可能需要更新API")
+
             # 显示处理参数
             params = data['processingParams']
             print(f"⚙️  调色板来源: {params['paletteSource']}")
@@ -340,7 +347,7 @@ def test_pattern_download(convert_data, output_filename, test_options=None):
             "gridInterval": 10,
             "showCoordinates": True,
             "includeStats": True,
-            "filename": Path(output_filename).stem
+            "filename": "中文"
         }
 
         # 添加测试选项
@@ -352,7 +359,6 @@ def test_pattern_download(convert_data, output_filename, test_options=None):
             "gridDimensions": convert_data['gridDimensions'],
             "colorCounts": convert_data['colorCounts'],
             "totalBeadCount": convert_data['totalBeadCount'],
-            "activeBeadPalette": convert_data['activeBeadPalette'],
             "selectedColorSystem": convert_data['processingParams']['selectedColorSystem'],
             "downloadOptions": download_options
         }

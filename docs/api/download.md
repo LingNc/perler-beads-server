@@ -12,12 +12,11 @@
   "method": "POST",
   "description": "生成并下载拼豆图纸图片",
   "parameters": {
-    "pixelData": { "type": "MappedPixel[][]", "required": true, "description": "像素数据" },
-    "gridDimensions": { "type": "{ N: number, M: number }", "required": true, "description": "网格尺寸" },
-    "colorCounts": { "type": "object", "required": true, "description": "颜色统计" },
-    "totalBeadCount": { "type": "number", "required": true, "description": "总珠子数" },
-    "activeBeadPalette": { "type": "PaletteColor[]", "required": true, "description": "活跃调色板" },
-    "selectedColorSystem": { "type": "ColorSystem", "required": true, "description": "选择的颜色系统" },
+    "pixelData": { "type": "MappedPixel[][]", "required": true, "description": "像素数据（转换完成后的网格数据）" },
+    "gridDimensions": { "type": "{ N: number, M: number }", "required": true, "description": "网格尺寸（宽度和高度）" },
+    "colorCounts": { "type": "object", "required": true, "description": "颜色统计（各颜色使用数量）" },
+    "totalBeadCount": { "type": "number", "required": true, "description": "总珠子数量" },
+    "selectedColorSystem": { "type": "string", "required": true, "description": "选择的颜色系统" },
     "downloadOptions": {
       "showGrid": { "type": "boolean", "default": true, "description": "显示网格线" },
       "gridInterval": { "type": "number", "default": 10, "description": "网格间隔" },
@@ -52,7 +51,6 @@
 | `gridDimensions` | Object | ✅ | 网格尺寸 |
 | `colorCounts` | Object | ✅ | 颜色统计 |
 | `totalBeadCount` | Number | ✅ | 总珠子数 |
-| `activeBeadPalette` | Array | ✅ | 活跃调色板 |
 | `selectedColorSystem` | String | ✅ | 色号系统 |
 | `downloadOptions` | Object | ❌ | 下载选项 |
 
@@ -65,7 +63,6 @@
 | `showCoordinates` | boolean | true | - | 显示坐标 |
 | `gridLineColor` | string | "#CCCCCC" | - | 网格线颜色 |
 | `includeStats` | boolean | true | - | 包含统计信息 |
-| `filename` | string | 自动生成 | - | 文件名 |
 | `title` | string | - | - | **NEW** 图纸标题（高度已增加） |
 | `dpi` | number | 150 | 72-600 | **NEW** 图片分辨率（DPI模式） |
 | `renderMode` | string | "dpi" | "dpi"\|"fixed" | **NEW** 渲染模式 |
@@ -127,10 +124,6 @@
     "#E7002F": {"count": 325, "color": "#E7002F"}
   },
   "totalBeadCount": 625,
-  "activeBeadPalette": [
-    {"key": "#FFFFFF", "color": "#FFFFFF"},
-    {"key": "#E7002F", "color": "#E7002F"}
-  ],
   "selectedColorSystem": "MARD"
 }
 ```
@@ -142,7 +135,6 @@
   "gridDimensions": "...",
   "colorCounts": "...",
   "totalBeadCount": 625,
-  "activeBeadPalette": "...",
   "selectedColorSystem": "MARD",
   "downloadOptions": {
     "showGrid": true,
@@ -150,7 +142,6 @@
     "showCoordinates": true,
     "gridLineColor": "#999999",
     "includeStats": true,
-    "filename": "my_pattern",
     "title": "我的拼豆图纸 - 爱心图案",
     "renderMode": "dpi",
     "dpi": 300
@@ -165,7 +156,6 @@
   "gridDimensions": "...",
   "colorCounts": "...",
   "totalBeadCount": 625,
-  "activeBeadPalette": "...",
   "selectedColorSystem": "MARD",
   "downloadOptions": {
     "title": "高分辨率拼豆图纸",
@@ -183,7 +173,6 @@
   "gridDimensions": "...",
   "colorCounts": "...",
   "totalBeadCount": 625,
-  "activeBeadPalette": "...",
   "selectedColorSystem": "MARD",
   "downloadOptions": {
     "title": "固定宽度拼豆图纸",
@@ -200,6 +189,11 @@
 - **Content-Type**: `image/png`
 - **Content-Disposition**: `attachment; filename="pattern.png"`
 - **Body**: PNG图片二进制数据
+
+> **API更新说明:**
+> 1. 移除了 `activeBeadPalette` 参数 - 在下载API中不再需要调色板数据，因为所有颜色映射已在转换阶段完成
+> 2. 移除了 `filename` 参数 - 服务端统一使用固定文件名，由客户端决定保存文件时使用的实际文件名
+> 3. 简化了响应头信息 - 默认使用 `pattern.png` 作为下载文件名
 
 #### 文件大小参考
 | DPI | 30x30网格 | 50x50网格 | 100x100网格 |
@@ -268,10 +262,6 @@
     "#E7002F": {"count": 2, "color": "#E7002F"}
   },
   "totalBeadCount": 4,
-  "activeBeadPalette": [
-    {"key": "#FFFFFF", "color": "#FFFFFF"},
-    {"key": "#E7002F", "color": "#E7002F"}
-  ],
   "selectedColorSystem": "MARD",
   "downloadOptions": {
     "title": "测试图纸",

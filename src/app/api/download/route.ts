@@ -27,13 +27,12 @@ export async function POST(request: NextRequest) {
       gridDimensions,
       colorCounts,
       totalBeadCount,
-      activeBeadPalette,
       selectedColorSystem,
       downloadOptions = {}
     } = body;
 
     // 验证必要参数
-    if (!pixelData || !gridDimensions || !colorCounts || !activeBeadPalette || !selectedColorSystem) {
+    if (!pixelData || !gridDimensions || !colorCounts || !selectedColorSystem) {
       return NextResponse.json({
         success: false,
         error: '缺少必要的数据参数'
@@ -61,7 +60,6 @@ export async function POST(request: NextRequest) {
       colorCounts,
       totalBeadCount,
       options,
-      activeBeadPalette,
       selectedColorSystem,
       title: options.title,
       dpi: options.dpi,
@@ -69,17 +67,11 @@ export async function POST(request: NextRequest) {
       fixedWidth: options.fixedWidth
     });
 
-    // 生成文件名
-    const filename = downloadOptions.filename || generateFilename({
-      selectedColorSystem,
-      gridDimensions
-    });
-    const fullFilename = `${filename}.png`;
-
+    // 不再生成文件名，客户端会自己处理
     return new NextResponse(imageBuffer, {
       headers: {
         'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="${fullFilename}"`,
+        'Content-Disposition': `attachment; filename="pattern.png"`,
         'Content-Length': imageBuffer.length.toString()
       }
     });
@@ -104,19 +96,17 @@ export async function GET() {
     method: 'POST',
     description: '生成并下载拼豆图纸图片',
     parameters: {
-      pixelData: { type: 'MappedPixel[][]', required: true, description: '像素数据' },
-      gridDimensions: { type: '{ N: number, M: number }', required: true, description: '网格尺寸' },
-      colorCounts: { type: 'object', required: true, description: '颜色统计' },
-      totalBeadCount: { type: 'number', required: true, description: '总珠子数' },
-      activeBeadPalette: { type: 'PaletteColor[]', required: true, description: '活跃调色板' },
-      selectedColorSystem: { type: 'ColorSystem', required: true, description: '选择的颜色系统' },
+      pixelData: { type: 'MappedPixel[][]', required: true, description: '像素数据（转换完成后的网格数据）' },
+      gridDimensions: { type: '{ N: number, M: number }', required: true, description: '网格尺寸（宽度和高度）' },
+      colorCounts: { type: 'object', required: true, description: '颜色统计（各颜色使用数量）' },
+      totalBeadCount: { type: 'number', required: true, description: '总珠子数量' },
+      selectedColorSystem: { type: 'string', required: true, description: '选择的颜色系统（如MARD、COCO等）' },
       downloadOptions: {
         showGrid: { type: 'boolean', default: true, description: '显示网格线' },
         gridInterval: { type: 'number', default: 10, description: '网格间隔' },
         showCoordinates: { type: 'boolean', default: true, description: '显示坐标' },
         gridLineColor: { type: 'string', default: '#CCCCCC', description: '网格线颜色' },
         includeStats: { type: 'boolean', default: true, description: '包含统计信息' },
-        filename: { type: 'string', description: '自定义文件名' },
         title: { type: 'string', description: '图纸标题 - 显示在图片顶部的标题栏中，高度已增加' },
         dpi: { type: 'number', default: 150, description: '图片分辨率 (DPI) - DPI模式下使用' },
         renderMode: {
