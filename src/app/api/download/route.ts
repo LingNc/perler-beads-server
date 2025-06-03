@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
 // 支持GET请求返回API文档
 export async function GET() {
   return NextResponse.json({
-    endpoint: '/api/v1/download',
+    endpoint: '/api/download',
     method: 'POST',
     description: '生成并下载拼豆图纸图片',
     parameters: {
