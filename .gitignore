@@ -45,6 +45,6 @@ next-env.d.ts
 
 tests/*
 !tests/test_all*.py
-!tests/test*.png
+!tests/test_image.png
 !tests/custom*.json
 !tests/*.ipynb

@@ -5,4 +5,6 @@ export type GridDownloadOptions = {
   showCoordinates: boolean;
   gridLineColor: string;
   includeStats: boolean;
-}; 
+  title?: string;
+  dpi?: number;
+};

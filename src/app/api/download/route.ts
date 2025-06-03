@@ -13,6 +13,8 @@ interface DownloadOptions {
   gridLineColor?: string;
   includeStats?: boolean;
   filename?: string;
+  title?: string;
+  dpi?: number;
 }
 
 export async function POST(request: NextRequest) {
@@ -43,6 +45,8 @@ export async function POST(request: NextRequest) {
       showCoordinates: true,
       gridLineColor: '#CCCCCC',
       includeStats: true,
+      title: downloadOptions.title,
+      dpi: downloadOptions.dpi || 150,
       ...downloadOptions
     };
 
@@ -54,7 +58,9 @@ export async function POST(request: NextRequest) {
       totalBeadCount,
       options,
       activeBeadPalette,
-      selectedColorSystem
+      selectedColorSystem,
+      title: options.title,
+      dpi: options.dpi
     });
 
     // 生成文件名
@@ -104,7 +110,9 @@ export async function GET() {
         showCoordinates: { type: 'boolean', default: true, description: '显示坐标' },
         gridLineColor: { type: 'string', default: '#CCCCCC', description: '网格线颜色' },
         includeStats: { type: 'boolean', default: true, description: '包含统计信息' },
-        filename: { type: 'string', description: '自定义文件名' }
+        filename: { type: 'string', description: '自定义文件名' },
+        title: { type: 'string', description: '图纸标题' },
+        dpi: { type: 'number', default: 150, description: '图片分辨率 (DPI)' }
       }
     },
     response: {

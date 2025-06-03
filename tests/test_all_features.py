@@ -203,7 +203,7 @@ def test_image_conversion_default_palette(palette_data):
         with open(TEST_IMAGE, 'rb') as f:
             files = {'image': (TEST_IMAGE, f, 'image/png')}
             form_data = {
-                'granularity': '50',
+                'granularity': 20,
                 'pixelationMode': 'average',
                 'selectedPalette': default_palette,
                 'selectedColorSystem': color_system,
@@ -325,7 +325,7 @@ def test_image_conversion_custom_palette(custom_palette):
         print_error(f"自定义调色板转换异常: {e}")
         return None
 
-def test_pattern_download(convert_data, output_filename):
+def test_pattern_download(convert_data, output_filename, test_options=None):
     """测试图纸下载"""
     print_step(6, f"测试图纸下载 ({output_filename})")
 
@@ -335,6 +335,18 @@ def test_pattern_download(convert_data, output_filename):
 
     try:
         # 准备下载数据
+        download_options = {
+            "showGrid": True,
+            "gridInterval": 10,
+            "showCoordinates": True,
+            "includeStats": True,
+            "filename": Path(output_filename).stem
+        }
+
+        # 添加测试选项
+        if test_options:
+            download_options.update(test_options)
+
         download_data = {
             "pixelData": convert_data['pixelData'],
             "gridDimensions": convert_data['gridDimensions'],
@@ -342,14 +354,16 @@ def test_pattern_download(convert_data, output_filename):
             "totalBeadCount": convert_data['totalBeadCount'],
             "activeBeadPalette": convert_data['activeBeadPalette'],
             "selectedColorSystem": convert_data['processingParams']['selectedColorSystem'],
-            "downloadOptions": {
-                "showGrid": True,
-                "gridInterval": 10,
-                "showCoordinates": True,
-                "includeStats": True,
-                "filename": Path(output_filename).stem
-            }
+            "downloadOptions": download_options
         }
+
+        print(f"🎯 下载选项:")
+        if 'title' in download_options:
+            print(f"   📝 标题: {download_options['title']}")
+        if 'dpi' in download_options:
+            print(f"   🔍 DPI: {download_options['dpi']}")
+        print(f"   📐 网格: {download_options['showGrid']}")
+        print(f"   📊 统计: {download_options['includeStats']}")
 
         start_time = time.time()
         response = requests.post(
@@ -376,11 +390,67 @@ def test_pattern_download(convert_data, output_filename):
             return True
         else:
             print_error(f"图纸下载失败: {response.status_code}")
+            if response.text:
+                error_data = response.json()
+                print(f"错误详情: {error_data.get('error', 'N/A')}")
             return False
 
     except Exception as e:
         print_error(f"图纸下载异常: {e}")
         return False
+
+def test_download_with_title_and_dpi(default_convert_data, custom_convert_data):
+    """测试带标题和DPI的下载功能"""
+    print_step("6.5", "测试标题和DPI功能")
+
+    if not default_convert_data and not custom_convert_data:
+        print_error("没有可用的转换数据，跳过标题和DPI测试")
+        return False
+
+    # 优先使用默认调色板数据，如果没有则使用自定义调色板数据
+    test_data = default_convert_data if default_convert_data else custom_convert_data
+    data_type = "默认调色板" if default_convert_data else "自定义调色板"
+
+    print(f"📊 使用 {data_type} 转换数据进行测试")
+    print(f"📐 网格尺寸: {test_data['gridDimensions']['width']}x{test_data['gridDimensions']['height']}")
+    print(f"🔢 总珠子数: {test_data['totalBeadCount']}")
+
+    test_cases = [
+        {
+            "name": "标准DPI无标题",
+            "filename": "test_standard_dpi.png",
+            "options": {"dpi": 150}
+        },
+        {
+            "name": "高DPI有标题",
+            "filename": "test_high_dpi_with_title.png",
+            "options": {"dpi": 300, "title": "测试拼豆图纸"}
+        },
+        {
+            "name": "低DPI长标题",
+            "filename": "test_low_dpi_long_title.png",
+            "options": {"dpi": 72, "title": "这是一个很长的拼豆图纸标题用来测试布局"}
+        },
+        {
+            "name": "超高DPI短标题",
+            "filename": "test_ultra_high_dpi.png",
+            "options": {"dpi": 600, "title": "高清图纸"}
+        }
+    ]
+
+    success_count = 0
+    for i, test_case in enumerate(test_cases, 1):
+        print(f"\n🧪 子测试 {i}: {test_case['name']}")
+        success = test_pattern_download(
+            test_data,
+            test_case['filename'],
+            test_case['options']
+        )
+        if success:
+            success_count += 1
+
+    print(f"\n📊 标题和DPI测试: {success_count}/{len(test_cases)} 通过")
+    return success_count == len(test_cases)
 
 def test_api_documentation():
     """测试API文档端点"""
@@ -472,6 +542,7 @@ def main():
         'custom_convert': False,
         'default_download': False,
         'custom_download': False,
+        'title_dpi_download': False,
         'documentation': False
     }
 
@@ -511,6 +582,12 @@ def main():
             "custom_palette_pattern.png"
         )
 
+    # 6.5 测试标题和DPI功能 - 使用真实转换数据
+    results['title_dpi_download'] = test_download_with_title_and_dpi(
+        default_convert_data,
+        custom_convert_data
+    )
+
     # 7. 测试API文档
     results['documentation'] = test_api_documentation()
 
@@ -525,6 +602,7 @@ def main():
         ('自定义调色板转换', results['custom_convert']),
         ('默认调色板下载', results['default_download']),
         ('自定义调色板下载', results['custom_download']),
+        ('标题和DPI下载', results['title_dpi_download']),
         ('API文档', results['documentation'])
     ]
 
