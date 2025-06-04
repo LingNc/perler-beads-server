@@ -148,7 +148,7 @@ export function parseCustomPalette(
 
 // 计算颜色统计
 export function calculateColorCounts(pixelData: MappedPixel[][]): ColorCount {
-  const colorCounts: { [key: string]: { count: number; color: string } } = {};
+  const colorCounts: ColorCount = {};
 
   for (const row of pixelData) {
     for (const pixel of row) {
@@ -234,7 +234,6 @@ export function filterTransparentColorCounts(colorCounts: { [key: string]: { cou
 // 过滤颜色统计，排除 T01 透明色（当 showTransparentLabels 为 false 时）
 export function filterColorCountsForBeadUsage(
   colorCounts: ColorCount,
-  selectedColorSystem: ColorSystem,
   excludeTransparent: boolean = true
 ): { filteredCounts: ColorCount; filteredTotal: number } {
   if (!excludeTransparent) {
@@ -245,12 +244,10 @@ export function filterColorCountsForBeadUsage(
   const filteredCounts: ColorCount = {};
   let filteredTotal = 0;
 
-  for (const [hexColor, colorData] of Object.entries(colorCounts)) {
-    const colorKey = getColorKeyByHex(hexColor, selectedColorSystem);
-
-    // 如果不是 T01 透明色，则包含在统计中
-    if (colorKey !== 'T01') {
-      filteredCounts[hexColor] = colorData;
+  for (const [colorKey, colorData] of Object.entries(colorCounts)) {
+    // 如果不是 #FFFFFF(T01) 透明色，则包含在统计中
+    if (colorData.color !== '#FFFFFF') {
+      filteredCounts[colorKey] = colorData;
       filteredTotal += colorData.count;
     }
   }

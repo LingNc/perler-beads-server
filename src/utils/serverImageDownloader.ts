@@ -19,7 +19,6 @@ export async function generateImageBuffer({
   const mappedPixelData = pixelData.mappedData;
   const N = pixelData.width;
   const M = pixelData.height;
-  const colorSystem = pixelData.colorSystem;
 
   // 统计色号
   let colorCounts = calculateColorCounts(mappedPixelData);
@@ -27,10 +26,8 @@ export async function generateImageBuffer({
   // 根据是否显示透明标签过滤统计数据
   const { filteredCounts, filteredTotal } = filterColorCountsForBeadUsage(
     colorCounts,
-    colorSystem,
     !options.showTransparentLabels
   );
-
   // 使用过滤后的统计数据
   colorCounts = filteredCounts;
   const totalBeadCount = filteredTotal;
@@ -99,13 +96,19 @@ export async function generateImageBuffer({
   if (includeStats && colorCounts) {
     const colorKeys = Object.keys(colorCounts);
     const statsTopMargin = 24 * dpiScale;
-    const finalWidth = gridWidth + axisLabelSize + extraLeftMargin + extraRightMargin;
-    const availableStatsWidth = finalWidth - (statsPadding * 2);
-    const numColumns = Math.max(1, Math.min(4, Math.floor(availableStatsWidth / (250 * dpiScale))));
-    const baseSwatchSize = 18 * dpiScale;
-    const swatchSize = Math.floor(baseSwatchSize + (widthFactor * 20 * dpiScale));
+    const finalWidth = gridWidth + axisLabelSize + extraLeftMargin + extraRightMargin;    const availableStatsWidth = finalWidth - (statsPadding * 2);
+
+    // 色块的基础尺寸（适中大小以容纳文字）
+    const baseSwatchSize = Math.max(24 * dpiScale, 28 * dpiScale);
+    const swatchSize = Math.floor(baseSwatchSize + (widthFactor * 15 * dpiScale));
+
+    // 每个统计项的总宽度（色块 + 间距 + 文字区域）
+    const itemTotalWidth = swatchSize + 8 * dpiScale + 60 * dpiScale; // 色块 + 间距 + 文字宽度
+
+    // 根据可用宽度动态计算列数
+    const numColumns = Math.max(1, Math.floor(availableStatsWidth / itemTotalWidth));
     const numRows = Math.ceil(colorKeys.length / numColumns);
-    const statsRowHeight = Math.max(swatchSize + 8 * dpiScale, 25 * dpiScale);
+    const statsRowHeight = swatchSize + 12 * dpiScale; // 增加行高
     const titleHeight = 40 * dpiScale;
     const footerHeight = 40 * dpiScale;
     statsHeight = titleHeight + (numRows * statsRowHeight) + footerHeight + (statsPadding * 2) + statsTopMargin;
@@ -208,7 +211,7 @@ export async function generateImageBuffer({
 
   // 绘制分隔网格线（如果需要）
   if (showGrid) {
-    ctx.strokeStyle = gridLineColor;
+    ctx.strokeStyle = gridLineColor || '#141414'; // 默认使用纯黑色
     ctx.lineWidth = 1.5 * dpiScale;
 
     // 垂直分隔线
@@ -238,12 +241,17 @@ export async function generateImageBuffer({
     // 调整统计区域的起始位置，使布局更紧凑
     const statsStartY = offsetY + titleBarHeight + extraTopMargin + gridHeight + axisLabelSize + 16 * dpiScale;
     const availableWidth = contentWidth - (statsPadding * 2);
-    // 根据可用宽度自动计算列数
-    const numColumns = Math.max(1, Math.min(4, Math.floor(availableWidth / (250 * dpiScale))));
-    const swatchSize = Math.floor(18 * dpiScale + (widthFactor * 20 * dpiScale));
+
+    // 色块的基础尺寸（适中大小以容纳文字）
+    const baseSwatchSize = Math.max(24 * dpiScale, 28 * dpiScale);
+    const swatchSize = Math.floor(baseSwatchSize + (widthFactor * 15 * dpiScale));
+    // 每个统计项的总宽度（色块 + 间距 + 文字区域）
+    const itemTotalWidth = swatchSize + 8 * dpiScale + 60 * dpiScale;
+
+    // 根据可用宽度动态计算列数
+    const numColumns = Math.max(1, Math.floor(availableWidth / itemTotalWidth));
 
     // 统计标题 - 与Y轴坐标数字的左边对齐
-    // Y轴坐标数字是居中显示的，所以要计算数字文本的左边位置
     let statsLeftAlign;
     if (showCoordinates) {
       // 计算最大Y轴坐标数字的宽度
@@ -261,13 +269,15 @@ export async function generateImageBuffer({
     ctx.font = `bold ${statsFontSize + 2 * dpiScale}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('珠子用量统计', statsLeftAlign, statsStartY);
+    ctx.fillText('豆子用量统计', statsLeftAlign, statsStartY);
 
     // 绘制颜色统计
     const itemStartY = statsStartY + 40 * dpiScale;
     const columnWidth = availableWidth / numColumns;
 
-    ctx.font = `${statsFontSize}px sans-serif`;
+    // 计算色块内文字的字体大小 - 增大文字大小以提高可读性
+    const swatchFontSize = Math.max(10 * dpiScale, Math.min(16 * dpiScale, swatchSize / 3));
+    const countFontSize = Math.max(10 * dpiScale, statsFontSize);
 
     sortedColorKeys.forEach((colorKey, index) => {
       const colorData = colorCounts[colorKey];
@@ -275,32 +285,39 @@ export async function generateImageBuffer({
       const row = Math.floor(index / numColumns);
 
       const itemX = statsLeftAlign + column * columnWidth;
-      const itemY = itemStartY + row * 30 * dpiScale;
+      const itemY = itemStartY + row * (swatchSize + 12 * dpiScale);
 
       // 绘制色块
       ctx.fillStyle = colorData.color;
       ctx.fillRect(itemX, itemY, swatchSize, swatchSize);
 
+      // 绘制色块边框
       ctx.strokeStyle = '#DDDDDD';
       ctx.lineWidth = 1;
       ctx.strokeRect(itemX, itemY, swatchSize, swatchSize);
 
-      // 绘制文本
+      // 在色块内绘制颜色代码 - colorKey就是色号
+      ctx.fillStyle = getContrastColor(colorData.color);
+      ctx.font = `bold ${swatchFontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(colorKey, itemX + swatchSize / 2, itemY + swatchSize / 2);
+
+      // 在右侧绘制数量，垂直居中对齐
       ctx.fillStyle = '#333333';
+      ctx.font = `${countFontSize}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
       ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      // 直接使用 colorKey 作为显示键，因为这就是从像素数据中来的正确 key
-      const displayKey = colorKey;
-      // 使用支持中文的字体
-      ctx.font = `${statsFontSize}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
-      ctx.fillText(`${displayKey}: ${colorData.count}`, itemX + swatchSize + 8 * dpiScale, itemY + 2 * dpiScale);
+      ctx.textBaseline = 'middle'; // 垂直居中
+      ctx.fillText(`${colorData.count}`, itemX + swatchSize + 8 * dpiScale, itemY + swatchSize / 2);
     });
 
     // 总计
-    const totalY = itemStartY + Math.ceil(sortedColorKeys.length / numColumns) * 30 * dpiScale + 20 * dpiScale;
+    const totalY = itemStartY + Math.ceil(sortedColorKeys.length / numColumns) * (swatchSize + 12 * dpiScale) + 20 * dpiScale;
     ctx.fillStyle = '#333333';
     ctx.font = `bold ${statsFontSize + 1 * dpiScale}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
-    ctx.fillText(`总计: ${totalBeadCount} 颗珠子`, statsLeftAlign, totalY);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`总计: ${totalBeadCount} 颗`, statsLeftAlign, totalY);
   }
 
   // 返回PNG buffer
