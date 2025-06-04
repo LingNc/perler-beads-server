@@ -9,6 +9,14 @@ export interface CustomPalette{
     totalColors?: number
 }
 
+// 预制调色板接口
+export interface PresetPalette {
+  id: string;
+  name: string;
+  description?: string;
+  data: CustomPalette;
+}
+
 // 颜色统计
 export type ColorCount =
     Record<

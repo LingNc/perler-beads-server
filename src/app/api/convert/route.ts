@@ -3,6 +3,7 @@ import { calculatePixelGrid, PixelationMode, PaletteColor } from '../../../utils
 import {
   getDefaultPalette,
   parseCustomPalette,
+  parsePresetPalette,
   calculateColorCounts,
   createImageFromBuffer,
   validateConvertParams
@@ -20,8 +21,9 @@ export async function POST(request: NextRequest) {
     const similarityThreshold = parseInt(formData.get('similarityThreshold') as string) || 30;
     const pixelationMode = (formData.get('pixelationMode') as PixelationMode) || PixelationMode.Dominant;
     const selectedColorSystem = formData.get('selectedColorSystem') as ColorSystem || 'MARD';
+    const selectedPalette = formData.get('selectedPalette') as string || '290色';
 
-    // 获取自定义调色板数据（如果提供的话）
+    // 获取自定义调色板数据（仅当选择 custom 时使用）
     const customPaletteData = formData.get('customPalette') as string;
 
     // 验证必要参数
@@ -51,15 +53,20 @@ export async function POST(request: NextRequest) {
     // 获取调色板数据
     let palette: PaletteColor[];
     let paletteSource = 'default';
+    let paletteName = '290色';
 
-    // 调色板名字
-    let paletteName = '291色';
-
-    if (customPaletteData) {
+    if (selectedPalette === 'custom') {
       // 使用自定义调色板
+      if (!customPaletteData) {
+        return NextResponse.json({
+          success: false,
+          error: '选择了自定义调色板但未提供调色板数据'
+        }, { status: 400 });
+      }
+
       try {
         const customColors = JSON.parse(customPaletteData) as CustomPalette;
-        palette = parseCustomPalette(customColors,selectedColorSystem);
+        palette = parseCustomPalette(customColors, selectedColorSystem);
         paletteSource = 'custom';
         paletteName = customColors.name || `${palette.length}色`;
         console.log(`使用自定义调色板，包含 ${palette.length} 种颜色`);
@@ -70,8 +77,22 @@ export async function POST(request: NextRequest) {
           details: error instanceof Error ? error.message : '未知错误'
         }, { status: 400 });
       }
+    } else if (selectedPalette !== '290色') {
+      // 使用预制调色板（非默认调色板的其他选项）
+      try {
+        palette = parsePresetPalette(selectedPalette, selectedColorSystem);
+        paletteSource = 'preset';
+        paletteName = `${selectedPalette}`;
+        console.log(`使用预制调色板 ${selectedPalette}，包含 ${palette.length} 种颜色`);
+      } catch (error) {
+        return NextResponse.json({
+          success: false,
+          error: `预制调色板加载错误: ${selectedPalette}`,
+          details: error instanceof Error ? error.message : '未知错误'
+        }, { status: 400 });
+      }
     } else {
-      // 使用默认调色板
+      // 使用默认调色板 (290色)
       palette = getDefaultPalette(selectedColorSystem);
       if (palette.length === 0) {
         return NextResponse.json({
@@ -79,6 +100,7 @@ export async function POST(request: NextRequest) {
           error: '无效的调色板'
         }, { status: 400 });
       }
+      paletteName = '290色';
     }
     // 计算网格尺寸
     const aspectRatio = image.height / image.width;

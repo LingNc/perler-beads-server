@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMardToHexMapping, getColorSystemOptions, ColorSystem } from '../../../utils/colorSystemUtils';
 import { hexToRgb } from '../../../utils/pixelation';
-import { validateCustomPalette } from '../../../utils/apiUtils';
+import { validateCustomPalette, getAvailablePresetPalettes } from '../../../utils/apiUtils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,10 +35,23 @@ export async function GET(request: NextRequest) {
     } else {
       // 返回简单的调色板选项
       const totalColors = Object.keys(mardToHexMapping).length;
+
+      // 获取预制调色板
+      const presetPalettes = getAvailablePresetPalettes();
+
       const paletteOptions = [
-        { name: '291色', description: '完整色板', colorCount: totalColors },
-        { name: '自定义', description: '用户上传的调色板', colorCount: 0 }
+        { name: 'custom', description: '用户上传的调色板', colorCount: 0 },
+        { name: '290色', description: '完整色板', colorCount: totalColors }
       ];
+
+      // 添加预制调色板选项
+      presetPalettes.forEach(preset => {
+        paletteOptions.push({
+          name: preset.id,
+          description: preset.description || `预制调色板 - ${preset.data.selectedHexValues.length} 种颜色`,
+          colorCount: preset.data.selectedHexValues.length
+        });
+      });
 
       const colorSystems = getColorSystemOptions();
 

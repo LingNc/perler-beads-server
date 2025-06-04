@@ -2,7 +2,9 @@
 import { createCanvas, loadImage, Image, Canvas, CanvasRenderingContext2D } from 'canvas';
 import { PixelationMode, PaletteColor, MappedPixel, hexToRgb } from './pixelation';
 import { getMardToHexMapping, getColorKeyByHex, ColorSystem, isValidColorInSystem } from './colorSystemUtils';
-import { ColorCount, CustomPalette, ValidationResult } from '@/types/paletteTypes';
+import { ColorCount, PresetPalette ,CustomPalette, ValidationResult } from '@/types/paletteTypes';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // 通用调色板验证函数
 export function validateCustomPalette(
@@ -231,16 +233,16 @@ export function filterTransparentColorCounts(colorCounts: { [key: string]: { cou
 
 // 过滤颜色统计，排除 T01 透明色（当 showTransparentLabels 为 false 时）
 export function filterColorCountsForBeadUsage(
-  colorCounts: { [key: string]: { count: number; color: string } },
+  colorCounts: ColorCount,
   selectedColorSystem: ColorSystem,
   excludeTransparent: boolean = true
-): { filteredCounts: { [key: string]: { count: number; color: string } }; filteredTotal: number } {
+): { filteredCounts: ColorCount; filteredTotal: number } {
   if (!excludeTransparent) {
     const total = Object.values(colorCounts).reduce((sum, { count }) => sum + count, 0);
     return { filteredCounts: colorCounts, filteredTotal: total };
   }
 
-  const filteredCounts: { [key: string]: { count: number; color: string } } = {};
+  const filteredCounts: ColorCount = {};
   let filteredTotal = 0;
 
   for (const [hexColor, colorData] of Object.entries(colorCounts)) {
@@ -251,5 +253,94 @@ export function filterColorCountsForBeadUsage(
       filteredCounts[hexColor] = colorData;
       filteredTotal += colorData.count;
     }
-  }  return { filteredCounts, filteredTotal };
+  }
+  return { filteredCounts, filteredTotal };
+}
+
+// 获取所有可用的预制调色板列表
+export function getAvailablePresetPalettes(): PresetPalette[] {
+  const presetPalettes: PresetPalette[] = [];
+  const assertDir = path.join(process.cwd(), 'src', 'assert');
+
+  try {
+    if (!fs.existsSync(assertDir)) {
+      console.warn('预制调色板目录不存在:', assertDir);
+      return presetPalettes;
+    }
+
+    const files = fs.readdirSync(assertDir);
+    const jsonFiles = files.filter(file => file.endsWith('.json'));
+
+    for (const file of jsonFiles) {
+      const filePath = path.join(assertDir, file);
+      try {
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const paletteData = JSON.parse(fileContent) as CustomPalette;
+
+        // 基本验证
+        if (paletteData.selectedHexValues && Array.isArray(paletteData.selectedHexValues)) {
+          const paletteId = path.basename(file, '.json');
+          presetPalettes.push({
+            id: paletteId,
+            name: paletteData.name || paletteId,
+            description: `预制调色板 - ${paletteData.selectedHexValues.length} 种颜色`,
+            data: paletteData
+          });
+        }
+      } catch (error) {
+        console.warn(`解析预制调色板文件失败: ${file}`, error);
+      }
+    }
+  } catch (error) {
+    console.error('读取预制调色板目录失败:', error);
+  }
+
+  return presetPalettes;
+}
+
+// 根据ID获取特定的预制调色板
+export function getPresetPaletteById(paletteId: string): PresetPalette | null {
+  const assertDir = path.join(process.cwd(), 'src', 'assert');
+  const filePath = path.join(assertDir, `${paletteId}.json`);
+
+  try {
+    if (!fs.existsSync(filePath)) {
+      console.warn(`预制调色板文件不存在: ${paletteId}.json`);
+      return null;
+    }
+
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+    const paletteData = JSON.parse(fileContent) as CustomPalette;
+
+    // 验证数据格式
+    if (!paletteData.selectedHexValues || !Array.isArray(paletteData.selectedHexValues)) {
+      console.error(`预制调色板数据格式无效: ${paletteId}`);
+      return null;
+    }
+
+    return {
+      id: paletteId,
+      name: paletteData.name || paletteId,
+      description: `预制调色板 - ${paletteData.selectedHexValues.length} 种颜色`,
+      data: paletteData
+    };
+  } catch (error) {
+    console.error(`读取预制调色板失败: ${paletteId}`, error);
+    return null;
+  }
+}
+
+// 解析预制调色板为标准调色板格式
+export function parsePresetPalette(
+  paletteId: string,
+  colorSystem: ColorSystem
+): PaletteColor[] {
+  const presetPalette = getPresetPaletteById(paletteId);
+
+  if (!presetPalette) {
+    throw new Error(`预制调色板不存在: ${paletteId}`);
+  }
+
+  // 使用现有的解析函数
+  return parseCustomPalette(presetPalette.data, colorSystem);
 }
