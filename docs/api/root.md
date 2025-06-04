@@ -49,7 +49,8 @@
       "parameters": {
         "colorSystem": "string - 色号系统 (可选, GET)",
         "detailed": "boolean - 是否返回详细信息 (可选, GET)",
-        "customPalette": "object - 自定义调色板对象 (POST验证)"
+        "customPalette": "object - 自定义调色板对象 (POST验证)",
+        "colorSystem": "string - 色号系统 (POST验证, 可选, 默认MARD)"
       }
     },
     "/api/status": {

@@ -79,13 +79,27 @@
     "selectedHexValues": ["#E7002F", "#FEFFFF", "#00FF00"],
     "exportDate": "2025-06-03T16:09:31.956Z",
     "totalColors": 3
-  }
+  },
+  "colorSystem": "MARD"
 }
 ```
+
+**请求参数:**
+| 参数 | 类型 | 必需 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `customPalette` | object | 是 | - | 自定义调色板对象 |
+| `colorSystem` | string | 否 | "MARD" | 色号系统，用于验证颜色 |
 
 **版本说明:**
 - 版本3.0：不包含name字段
 - 版本4.0：包含name字段
+
+**色号系统:**
+- MARD：MARD色号系统
+- COCO：COCO色号系统
+- 漫漫：漫漫色号系统
+- 盼盼：盼盼色号系统
+- 咪小窝：咪小窝色号系统
 
 ### 成功响应
 
@@ -100,8 +114,9 @@
         "rgb": {"r": 231, "g": 0, "b": 47}
       }
     ],
-    "totalColors": 2,
+    "totalColors": 1,
     "version": "3.0",
+    "colorSystem": "MARD",
     "message": "自定义调色板验证成功"
   }
 }
@@ -114,7 +129,8 @@
   "success": false,
   "error": "颜色验证失败",
   "details": [
-    "第1个颜色的hex值格式无效: #GGGGGG"
+    "第1个颜色的hex值格式无效: #GGGGGG",
+    "第2个颜色 #FF0000 在 MARD 色号系统中不存在"
   ]
 }
 ```

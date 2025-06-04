@@ -16,3 +16,14 @@ export type ColorCount =
             count: number,
             color: string
         }>;
+
+// 验证结果接口
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  validatedColors?: Array<{
+    key: string;
+    hex: string;
+    rgb: { r: number; g: number; b: number };
+  }>;
+}
