@@ -1,25 +1,39 @@
 // 服务器端图片生成器 - 基于 imageDownloader.ts 适配
-import { DownloadImage, GridDownloadOptions } from '../types/downloadTypes';
-import { MappedPixel } from './pixelation';
+import { DownloadImage } from '../types/downloadTypes';
 import { createCanvas } from 'canvas';
-import { getContrastColor, hexToRgb, sortColorKeys } from './imageDownloader';
-import { calculateColorCounts } from './apiUtils';
+import { getContrastColor, sortColorKeys } from './imageDownloader';
+import { calculateColorCounts, filterColorCountsForBeadUsage } from './apiUtils';
 
 // 服务器端下载图片的主函数 - 返回 Buffer 而不是下载文件
 export async function generateImageBuffer({
-  mappedPixelData,
-  gridDimensions,
-  totalBeadCount,
+  title,
+  pixelData,
+  renderMode,
   options
 }: DownloadImage): Promise<Buffer> {
 
-  if (!mappedPixelData || !gridDimensions || gridDimensions.N === 0 || gridDimensions.M === 0) {
-    throw new Error("下载失败: 映射数据或尺寸无效。");
+  if (!pixelData || !pixelData.mappedData || !pixelData.width || !pixelData.height || pixelData.width === 0 || pixelData.height === 0) {
+    throw new Error("下载失败: 像素数据或尺寸无效。");
   }
+
+  const mappedPixelData = pixelData.mappedData;
+  const N = pixelData.width;
+  const M = pixelData.height;
+  const colorSystem = pixelData.colorSystem;
+
   // 统计色号
   let colorCounts = calculateColorCounts(mappedPixelData);
 
-  const { N, M } = gridDimensions;
+  // 根据是否显示透明标签过滤统计数据
+  const { filteredCounts, filteredTotal } = filterColorCountsForBeadUsage(
+    colorCounts,
+    colorSystem,
+    !options.showTransparentLabels
+  );
+
+  // 使用过滤后的统计数据
+  colorCounts = filteredCounts;
+  const totalBeadCount = filteredTotal;
 
   // 从下载选项中获取设置
   const {
@@ -28,9 +42,7 @@ export async function generateImageBuffer({
     showCoordinates,
     gridLineColor,
     includeStats,
-    title,
     dpi = 150, // 设置默认值
-    renderMode,
     fixedWidth,
     showTransparentLabels
   } = options;

@@ -1,4 +1,4 @@
-import { MappedPixel } from "@/utils/pixelation";
+import { PixelData } from "./pixelTypes";
 
 // 下载网格的选项类型定义
 export type GridDownloadOptions = {
@@ -7,17 +7,15 @@ export type GridDownloadOptions = {
   showCoordinates: boolean;
   gridLineColor: string;
   includeStats: boolean;
-  title?: string;
   dpi?: number;
-  renderMode?: 'dpi' | 'fixed';  // 渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式
   fixedWidth?: number;           // 固定宽度（像素）
   showTransparentLabels?: boolean; // 是否在T01透明色上显示字体标识
 };
 
 // 下载选项类型定义
 export interface DownloadImage{
-  mappedPixelData: MappedPixel[][] | null;
-  gridDimensions: { N: number; M: number } | null;
-  totalBeadCount: number;
+  title?: string;
+  pixelData: PixelData | null;
+  renderMode?: 'dpi' | 'fixed';  // 渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式
   options: GridDownloadOptions;
 }

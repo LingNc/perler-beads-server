@@ -19,7 +19,6 @@ export async function POST(request: NextRequest) {
     const granularity = parseInt(formData.get('granularity') as string) || 50;
     const similarityThreshold = parseInt(formData.get('similarityThreshold') as string) || 30;
     const pixelationMode = (formData.get('pixelationMode') as PixelationMode) || PixelationMode.Dominant;
-    const selectedPalette = formData.get('selectedPalette') as string || '291色';
     const selectedColorSystem = formData.get('selectedColorSystem') as ColorSystem || 'MARD';
 
     // 获取自定义调色板数据（如果提供的话）
@@ -107,12 +106,19 @@ export async function POST(request: NextRequest) {
     // 计算总珠子数量
     const totalBeadCount = Object.values(colorCounts).reduce((sum, { count }) => sum + count, 0);
 
+    // 创建符合新 PixelData 接口的数据结构
+    const pixelData = {
+      mappedData: processedData,
+      width: N,
+      height: M,
+      colorSystem: selectedColorSystem as ColorSystem
+    };
+
     // 返回完整的调色板
     return NextResponse.json({
       success: true,
       data: {
-        gridDimensions: { N, M, width: N, height: M },
-        pixelData: processedData,
+        pixelData: pixelData,
         colorCounts: colorCounts,
         totalBeadCount: totalBeadCount,
         paletteName,
@@ -172,8 +178,7 @@ export async function GET() {
     response: {
       success: 'boolean',
       data: {
-        gridDimensions: '{ N: number, M: number, width: number, height: number }',
-        pixelData: 'MappedPixel[][]',
+        pixelData: 'PixelData (包含 mappedData, width, height, colorSystem)',
         colorCounts: '{ [key: string]: { count: number, color: string } } (key为色号)',
         totalBeadCount: 'number',
         paletteName: 'string (使用的调色板名称)',
