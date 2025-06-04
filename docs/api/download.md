@@ -120,8 +120,8 @@
   ],
   "gridDimensions": {"N": 25, "M": 25, "width": 25, "height": 25},
   "colorCounts": {
-    "#FFFFFF": {"count": 300, "color": "#FFFFFF"},
-    "#E7002F": {"count": 325, "color": "#E7002F"}
+    "P12": {"count": 300, "color": "#FFFFFF"},
+    "M01": {"count": 325, "color": "#E7002F"}
   },
   "totalBeadCount": 625,
   "selectedColorSystem": "MARD"
@@ -258,8 +258,8 @@
   ],
   "gridDimensions": {"N": 2, "M": 2},
   "colorCounts": {
-    "#FFFFFF": {"count": 2, "color": "#FFFFFF"},
-    "#E7002F": {"count": 2, "color": "#E7002F"}
+    "P12": {"count": 2, "color": "#FFFFFF"},
+    "M01": {"count": 2, "color": "#E7002F"}
   },
   "totalBeadCount": 4,
   "selectedColorSystem": "MARD",

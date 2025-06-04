@@ -2,9 +2,10 @@
 import { createCanvas, loadImage, Image, Canvas, CanvasRenderingContext2D } from 'canvas';
 import { PixelationMode, PaletteColor, MappedPixel, hexToRgb } from './pixelation';
 import { getMardToHexMapping, getColorKeyByHex, ColorSystem } from './colorSystemUtils';
+import { ColorCount, CustomPalette } from '@/types/paletteTypes';
 
-// 获取调色板数据
-export function getPaletteByName(): PaletteColor[] {
+// 获取标准调色板数据
+export function getDefaultPalette(colorSystem: ColorSystem): PaletteColor[] {
   const mardToHexMapping = getMardToHexMapping();
 
   // 从colorSystemMapping.json获取所有MARD色号并转换为PaletteColor格式
@@ -12,7 +13,11 @@ export function getPaletteByName(): PaletteColor[] {
     .map(([, hex]) => {
       const rgb = hexToRgb(hex);
       if (!rgb) return null;
-      return { key: hex, hex, rgb };
+      return {
+        // 获取指定Hex在色号系统对应的色号
+        key: getColorKeyByHex(hex, colorSystem),
+        hex, rgb
+      };
     })
     .filter((color): color is PaletteColor => color !== null);
 
@@ -20,82 +25,49 @@ export function getPaletteByName(): PaletteColor[] {
 }
 
 // 解析自定义调色板
-export function parseCustomPalette(customPaletteData: unknown): PaletteColor[] {
-  // 支持新格式：{ version: "3.0", selectedHexValues: ["#RRGGBB", ...], exportDate: "...", totalColors: N }
-  if (customPaletteData &&
-      typeof customPaletteData === 'object' &&
-      'selectedHexValues' in customPaletteData &&
-      customPaletteData.selectedHexValues) {
-    const data = customPaletteData as { selectedHexValues: string[] };
-    const { selectedHexValues } = data;
-
-    if (!Array.isArray(selectedHexValues)) {
-      throw new Error('selectedHexValues必须是数组格式');
-    }
-
-    if (selectedHexValues.length === 0) {
-      throw new Error('自定义调色板不能为空');
-    }
-
-    const palette: PaletteColor[] = [];
-
-    for (let i = 0; i < selectedHexValues.length; i++) {
-      const hexValue = selectedHexValues[i];
-
-      if (typeof hexValue !== 'string' || !hexValue.startsWith('#')) {
-        throw new Error(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
-      }
-
-      const rgb = hexToRgb(hexValue);
-      if (!rgb) {
-        throw new Error(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
-      }
-
-      palette.push({
-        key: hexValue, // 使用hex值作为key
-        hex: hexValue,
-        rgb: rgb
-      });
-    }
-
-    return palette;
+export function parseCustomPalette(
+  customPaletteData: CustomPalette,
+  colorSystem: ColorSystem
+): PaletteColor[] {
+  // 验证必需字段
+  const selectedHexValues = customPaletteData.selectedHexValues;
+  if (selectedHexValues.length === 0) {
+    throw new Error('自定义调色板不能为空');
   }
 
-  // 支持旧格式：[{ key: "颜色名", hex: "#RRGGBB" }, ...]
-  if (Array.isArray(customPaletteData)) {
-    const palette: PaletteColor[] = [];
-
-    for (let i = 0; i < customPaletteData.length; i++) {
-      const color = customPaletteData[i] as { key?: string; hex?: string };
-
-      if (!color.hex || !color.key) {
-        throw new Error(`第${i + 1}个颜色缺少必要的hex或key字段`);
-      }
-
-      const rgb = hexToRgb(color.hex);
-      if (!rgb) {
-        throw new Error(`第${i + 1}个颜色的hex值格式无效: ${color.hex}`);
-      }
-
-      palette.push({
-        key: color.key,
-        hex: color.hex,
-        rgb: rgb
-      });
-    }
-
-    if (palette.length === 0) {
-      throw new Error('自定义调色板不能为空');
-    }
-
-    return palette;
+  // 验证版本支持
+  const supportedVersions = ['3.0', '4.0'];
+  if (!supportedVersions.includes(customPaletteData.version)) {
+    throw new Error(`不支持的调色板版本: ${customPaletteData.version}，支持的版本: ${supportedVersions.join(', ')}`);
   }
 
-  throw new Error('自定义调色板格式无效，请使用正确的JSON格式');
+  const palette: PaletteColor[] = [];
+
+  for (let i = 0; i < selectedHexValues.length; i++) {
+    const hexValue = selectedHexValues[i];
+
+    if (typeof hexValue !== 'string' || !hexValue.startsWith('#')) {
+      throw new Error(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
+    }
+
+    const rgb = hexToRgb(hexValue);
+    if (!rgb) {
+      throw new Error(`第${i + 1}个颜色的hex值转换RGB失败: ${hexValue}`);
+    }
+
+    palette.push({
+      key: getColorKeyByHex(hexValue,colorSystem), // 使用色号作为key
+      hex: hexValue.toUpperCase(), // 统一使用大写
+      rgb: rgb
+    });
+  }
+
+  console.log(`成功解析自定义调色板：版本${customPaletteData.version}，${customPaletteData.name ? `名称"${customPaletteData.name}"，` : ''}包含${palette.length}种颜色`);
+  return palette;
 }
 
 // 计算颜色统计
-export function calculateColorCounts(pixelData: MappedPixel[][]): { [key: string]: { count: number; color: string } } {
+export function calculateColorCounts(pixelData: MappedPixel[][]): ColorCount {
   const colorCounts: { [key: string]: { count: number; color: string } } = {};
 
   for (const row of pixelData) {
@@ -201,7 +173,5 @@ export function filterColorCountsForBeadUsage(
       filteredCounts[hexColor] = colorData;
       filteredTotal += colorData.count;
     }
-  }
-
-  return { filteredCounts, filteredTotal };
+  }  return { filteredCounts, filteredTotal };
 }

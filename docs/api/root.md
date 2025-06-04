@@ -49,8 +49,7 @@
       "parameters": {
         "colorSystem": "string - 色号系统 (可选, GET)",
         "detailed": "boolean - 是否返回详细信息 (可选, GET)",
-        "colors": "array - 自定义颜色数组 (POST验证，旧格式)",
-        "customPalette": "object - 自定义调色板对象 (POST验证，新格式)"
+        "customPalette": "object - 自定义调色板对象 (POST验证)"
       }
     },
     "/api/status": {
@@ -109,7 +108,7 @@
       "body": {
         "pixelData": "[[...]]",
         "gridDimensions": "{ N: 50, M: 40 }",
-        "colorCounts": "{ \"颜色1\": { count: 100, color: \"#FF0000\" } }",
+        "colorCounts": "{ \"M01\": { count: 100, color: \"#FF0000\" } }",
         "downloadOptions": {
           "showGrid": true,
           "format": "png"

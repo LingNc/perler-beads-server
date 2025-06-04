@@ -48,8 +48,8 @@ curl http://localhost:3000/api/status
 
 - **291色调色板**: 默认调色板，支持MARD、COCO、漫漫、盼盼、咪小窝 5种色号系统
 - **自定义调色板**: 支持用户自定义颜色，格式：
-  - 兼容格式: `{"version":"3.0","selectedHexValues":["#RRGGBB",...]}`
-  - 简易格式: `[{"key":"颜色名","hex":"#RRGGBB"}]`
+  - `{"version":"3.0/4.0","selectedHexValues":["#RRGGBB",...]}`
+  - 版本3.0不包含name字段，版本4.0包含name字段
 
 ## 错误处理
 

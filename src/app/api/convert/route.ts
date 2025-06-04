@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { calculatePixelGrid, PixelationMode, PaletteColor } from '../../../utils/pixelation';
 import {
-  getPaletteByName,
+  getDefaultPalette,
   parseCustomPalette,
   calculateColorCounts,
   createImageFromBuffer,
   validateConvertParams
 } from '../../../utils/apiUtils';
 import { ColorSystem, findTransparentFallbackColor } from '../../../utils/colorSystemUtils';
+import { CustomPalette } from '@/types/paletteTypes';
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const similarityThreshold = parseInt(formData.get('similarityThreshold') as string) || 30;
     const pixelationMode = (formData.get('pixelationMode') as PixelationMode) || PixelationMode.Dominant;
     const selectedPalette = formData.get('selectedPalette') as string || '291色';
-    const selectedColorSystem = formData.get('selectedColorSystem') as string || 'MARD';
+    const selectedColorSystem = formData.get('selectedColorSystem') as ColorSystem || 'MARD';
 
     // 获取自定义调色板数据（如果提供的话）
     const customPaletteData = formData.get('customPalette') as string;
@@ -52,12 +53,16 @@ export async function POST(request: NextRequest) {
     let palette: PaletteColor[];
     let paletteSource = 'default';
 
+    // 调色板名字
+    let paletteName = '291色';
+
     if (customPaletteData) {
       // 使用自定义调色板
       try {
-        const customColors = JSON.parse(customPaletteData);
-        palette = parseCustomPalette(customColors);
+        const customColors = JSON.parse(customPaletteData) as CustomPalette;
+        palette = parseCustomPalette(customColors,selectedColorSystem);
         paletteSource = 'custom';
+        paletteName = customColors.name || `${palette.length}色`;
         console.log(`使用自定义调色板，包含 ${palette.length} 种颜色`);
       } catch (error) {
         return NextResponse.json({
@@ -68,7 +73,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // 使用默认调色板
-      palette = getPaletteByName();
+      palette = getDefaultPalette(selectedColorSystem);
       if (palette.length === 0) {
         return NextResponse.json({
           success: false,
@@ -76,7 +81,6 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
     }
-
     // 计算网格尺寸
     const aspectRatio = image.height / image.width;
     const N = granularity;
@@ -103,9 +107,7 @@ export async function POST(request: NextRequest) {
     // 计算总珠子数量
     const totalBeadCount = Object.values(colorCounts).reduce((sum, { count }) => sum + count, 0);
 
-    // 只返回调色板名称，而不是完整的颜色信息
-    const activeBeadPalette = selectedPalette;
-
+    // 返回完整的调色板
     return NextResponse.json({
       success: true,
       data: {
@@ -113,12 +115,11 @@ export async function POST(request: NextRequest) {
         pixelData: processedData,
         colorCounts: colorCounts,
         totalBeadCount: totalBeadCount,
-        activeBeadPalette: activeBeadPalette,
+        paletteName,
         processingParams: {
           granularity,
           similarityThreshold,
           pixelationMode,
-          selectedPalette,
           selectedColorSystem,
           paletteSource,
           customPaletteColors: paletteSource === 'custom' ? palette.length : undefined
@@ -165,7 +166,7 @@ export async function GET() {
       customPalette: {
         type: 'string',
         required: false,
-        description: 'JSON格式的自定义调色板数据，格式：[{key:"", hex:"#RRGGBB"}]'
+        description: 'JSON格式的自定义调色板数据，格式：{"version":"3.0/4.0","selectedHexValues":["#RRGGBB",...]}'
       }
     },
     response: {
@@ -173,17 +174,20 @@ export async function GET() {
       data: {
         gridDimensions: '{ N: number, M: number, width: number, height: number }',
         pixelData: 'MappedPixel[][]',
-        colorCounts: '{ [key: string]: { count: number, color: string } }',
+        colorCounts: '{ [key: string]: { count: number, color: string } } (key为色号)',
         totalBeadCount: 'number',
-        activeBeadPalette: 'string (调色板名称)',
+        paletteName: 'string (使用的调色板名称)',
         processingParams: 'object (包含paletteSource和customPaletteColors)',
         imageInfo: 'object'
       }
     },
     notes: [
       '支持自定义调色板，通过customPalette参数传入JSON格式的颜色数据',
-      '默认使用291色调色板',
-      '自定义调色板格式：[{"key": "颜色名称", "hex": "#RRGGBB"}]'
+      '默认使用291色调色板，支持MARD、COCO、漫漫、盼盼、咪小窝等色号系统',
+      '自定义调色板格式：{"version":"3.0/4.0","selectedHexValues":["#RRGGBB",...]}',
+      '版本3.0不包含name字段，版本4.0包含name字段',
+      '调色板中的key字段表示色号，用于生成图纸时显示',
+      'colorCounts返回结果中的key为对应色号系统的色号标识'
     ]
   });
 }

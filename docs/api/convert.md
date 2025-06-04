@@ -22,11 +22,11 @@
       "description": "像素化模式：dominant=卡通模式, average=真实模式"
     },
     "selectedPalette": { "type": "string", "default": "291色", "description": "使用的调色板" },
-    "selectedColorSystem": { "type": "string", "default": "MARD", "description": "色号系统" },
+    "selectedColorSystem": { "type": "string", "default": "MARD", "description": "色号系统：MARD/COCO/漫漫/盼盼/咪小窝" },
     "customPalette": {
       "type": "string",
       "required": false,
-      "description": "JSON格式的自定义调色板数据"
+      "description": "JSON格式的自定义调色板数据，格式：{\"version\":\"3.0/4.0\",\"selectedHexValues\":[\"#RRGGBB\",...]}"
     }
   },
   "response": {
@@ -34,17 +34,19 @@
     "data": {
       "gridDimensions": "{ N: number, M: number, width: number, height: number }",
       "pixelData": "MappedPixel[][]",
-      "colorCounts": "{ [key: string]: { count: number, color: string } }",
+      "colorCounts": "{ [key: string]: { count: number, color: string } } - key为色号",
       "totalBeadCount": "number",
-      "activeBeadPalette": "string (调色板名称)",
+      "paletteName": "string (使用的调色板名称)",
       "processingParams": "object",
       "imageInfo": "object"
     }
   },
   "notes": [
     "支持自定义调色板，通过customPalette参数传入JSON格式的颜色数据",
-    "默认使用291色调色板",
-    "自定义调色板格式：[{\"key\": \"颜色名称\", \"hex\": \"#RRGGBB\"}]"
+    "默认使用291色调色板，支持5种色号系统：MARD、COCO、漫漫、盼盼、咪小窝",
+    "colorCounts中的key为对应色号系统的色号标识",
+    "自定义调色板格式：{\"version\":\"3.0/4.0\",\"selectedHexValues\":[\"#RRGGBB\",...]}",
+    "版本3.0不包含name字段，版本4.0包含name字段"
   ]
 }
 ```
@@ -69,7 +71,6 @@
 
 ### 自定义调色板格式
 
-**新格式:**
 ```json
 {
   "version": "3.0",
@@ -79,13 +80,9 @@
 }
 ```
 
-**旧格式:**
-```json
-[
-  {"key": "红色", "hex": "#E7002F"},
-  {"key": "白色", "hex": "#FEFFFF"}
-]
-```
+**版本说明:**
+- 版本3.0：不包含name字段
+- 版本4.0：包含name字段
 
 ### 成功响应
 
@@ -106,8 +103,8 @@
       ]
     ],
     "colorCounts": {
-      "#FFFFFF": {"count": 300, "color": "#FFFFFF"},
-      "#E7002F": {"count": 325, "color": "#E7002F"}
+      "P12": {"count": 300, "color": "#FFFFFF"},
+      "M01": {"count": 325, "color": "#E7002F"}
     },
     "totalBeadCount": 625,
     "activeBeadPalette": "291色",
