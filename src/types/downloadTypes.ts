@@ -1,3 +1,5 @@
+import { MappedPixel } from "@/utils/pixelation";
+
 // 下载网格的选项类型定义
 export type GridDownloadOptions = {
   showGrid: boolean;
@@ -11,3 +13,11 @@ export type GridDownloadOptions = {
   fixedWidth?: number;           // 固定宽度（像素）
   showTransparentLabels?: boolean; // 是否在T01透明色上显示字体标识
 };
+
+// 下载选项类型定义
+export interface DownloadImage{
+  mappedPixelData: MappedPixel[][] | null;
+  gridDimensions: { N: number; M: number } | null;
+  totalBeadCount: number;
+  options: GridDownloadOptions;
+}

@@ -1,87 +1,40 @@
 // 服务器端图片生成器 - 基于 imageDownloader.ts 适配
-import { GridDownloadOptions } from '../types/downloadTypes';
+import { DownloadImage, GridDownloadOptions } from '../types/downloadTypes';
 import { MappedPixel } from './pixelation';
-import { getDisplayColorKey, getColorKeyByHex, ColorSystem } from './colorSystemUtils';
 import { createCanvas } from 'canvas';
-
-// 用于获取对比色的工具函数
-function getContrastColor(hex: string): string {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return '#000000';
-  const luma = (0.2126 * rgb.r + 0.7152 * rgb.g + 0.0722 * rgb.b) / 255;
-  return luma > 0.5 ? '#000000' : '#FFFFFF';
-}
-
-// 辅助函数：将十六进制颜色转换为RGB
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-  const formattedHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(formattedHex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
-}
-
-// 用于排序颜色键的函数
-function sortColorKeys(a: string, b: string): number {
-  const regex = /^([A-Z]+)(\d+)$/;
-  const matchA = a.match(regex);
-  const matchB = b.match(regex);
-
-  if (matchA && matchB) {
-    const prefixA = matchA[1];
-    const numA = parseInt(matchA[2], 10);
-    const prefixB = matchB[1];
-    const numB = parseInt(matchB[2], 10);
-
-    if (prefixA !== prefixB) {
-      return prefixA.localeCompare(prefixB);
-    }
-    return numA - numB;
-  }
-  return a.localeCompare(b);
-}
+import { getContrastColor, hexToRgb, sortColorKeys } from './imageDownloader';
+import { calculateColorCounts } from './apiUtils';
 
 // 服务器端下载图片的主函数 - 返回 Buffer 而不是下载文件
 export async function generateImageBuffer({
   mappedPixelData,
   gridDimensions,
-  colorCounts,
   totalBeadCount,
-  options,
-  selectedColorSystem,
-  title,
-  dpi = 150,
-  renderMode = 'dpi',
-  fixedWidth
-}: {
-  mappedPixelData: MappedPixel[][] | null;
-  gridDimensions: { N: number; M: number } | null;
-  colorCounts: { [key: string]: { count: number; color: string } } | null;
-  totalBeadCount: number;
-  options: GridDownloadOptions;
-  selectedColorSystem: ColorSystem;
-  title?: string;
-  dpi?: number;
-  renderMode?: 'dpi' | 'fixed';
-  fixedWidth?: number;
-}): Promise<Buffer> {
+  options
+}: DownloadImage): Promise<Buffer> {
 
   if (!mappedPixelData || !gridDimensions || gridDimensions.N === 0 || gridDimensions.M === 0) {
     throw new Error("下载失败: 映射数据或尺寸无效。");
   }
-  if (!colorCounts) {
-    throw new Error("下载失败: 色号统计数据无效。");
-  }
+  // 统计色号
+  let colorCounts = calculateColorCounts(mappedPixelData);
 
   const { N, M } = gridDimensions;
 
   // 从下载选项中获取设置
-  const { showGrid, gridInterval, showCoordinates, gridLineColor, includeStats, showTransparentLabels } = options;
+  const {
+    showGrid,
+    gridInterval,
+    showCoordinates,
+    gridLineColor,
+    includeStats,
+    title,
+    dpi = 150, // 设置默认值
+    renderMode,
+    fixedWidth,
+    showTransparentLabels
+  } = options;
+
 
   // 根据渲染模式计算基础单元格大小
   let downloadCellSize: number;
@@ -215,15 +168,14 @@ export async function generateImageBuffer({
       if (cellData && !cellData.isExternal) {
         // 内部单元格：使用珠子颜色填充并绘制文本
         const cellColor = cellData.color || '#FFFFFF';
-        const cellKey = getDisplayColorKey(cellData.color || '#FFFFFF', selectedColorSystem);
+        const cellKey = cellData.key; // 直接使用像素数据中的 key
 
         ctx.fillStyle = cellColor;
         ctx.fillRect(drawX, drawY, downloadCellSize, downloadCellSize);
 
-        // 检查是否是T01透明色，以及是否应该显示字体
-        const colorKey = getColorKeyByHex(cellColor, selectedColorSystem);
-        const isT01Transparent = colorKey === 'T01';
-        const shouldShowLabel = !isT01Transparent || (isT01Transparent && showTransparentLabels);
+        // 检查是否是透明色，以及是否应该显示字体
+        const isTransparent = cellKey === 'T01' || cellKey === 'ERASE';
+        const shouldShowLabel = !isTransparent || (isTransparent && showTransparentLabels);
 
         if (shouldShowLabel) {
           ctx.fillStyle = getContrastColor(cellColor);
@@ -325,7 +277,8 @@ export async function generateImageBuffer({
       ctx.fillStyle = '#333333';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      const displayKey = getDisplayColorKey(colorData.color, selectedColorSystem);
+      // 直接使用 colorKey 作为显示键，因为这就是从像素数据中来的正确 key
+      const displayKey = colorKey;
       // 使用支持中文的字体
       ctx.font = `${statsFontSize}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
       ctx.fillText(`${displayKey}: ${colorData.count}`, itemX + swatchSize + 8 * dpiScale, itemY + 2 * dpiScale);
