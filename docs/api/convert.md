@@ -32,8 +32,12 @@
   "response": {
     "success": "boolean",
     "data": {
-      "gridDimensions": "{ N: number, M: number, width: number, height: number }",
-      "pixelData": "MappedPixel[][]",
+      "pixelData": {
+        "mappedData": "MappedPixel[][]",
+        "width": "number",
+        "height": "number",
+        "colorSystem": "string"
+        },
       "colorCounts": "{ [key: string]: { count: number, color: string } } - key为色号",
       "totalBeadCount": "number",
       "paletteName": "string (使用的调色板名称)",
@@ -90,29 +94,27 @@
 {
   "success": true,
   "data": {
-    "gridDimensions": {
-      "N": 25,
-      "M": 25,
+    "pixelData": {
+      "mappedData": [
+        [
+          {"key": "P12", "color": "#FFFFFF", "isExternal": false},
+          {"key": "M01", "color": "#E7002F", "isExternal": false}
+        ]
+      ],
       "width": 25,
-      "height": 25
+      "height": 25,
+      "colorSystem": "MARD"
     },
-    "pixelData": [
-      [
-        {"key": "#FFFFFF", "color": "#FFFFFF"},
-        {"key": "#E7002F", "color": "#E7002F"}
-      ]
-    ],
     "colorCounts": {
       "P12": {"count": 300, "color": "#FFFFFF"},
       "M01": {"count": 325, "color": "#E7002F"}
     },
     "totalBeadCount": 625,
-    "activeBeadPalette": "291色",
+    "paletteName": "291色",
     "processingParams": {
       "granularity": 50,
       "similarityThreshold": 30,
       "pixelationMode": "dominant",
-      "selectedPalette": "291色",
       "selectedColorSystem": "MARD",
       "paletteSource": "default"
     },
@@ -126,9 +128,10 @@
 ```
 
 > **API更新说明:**
-> - `activeBeadPalette` 参数格式已更改：原先返回颜色数组，现在仅返回调色板名称字符串
-> - 此更改减少了API响应大小，提高了效率
-> - 下载API已不再需要调色板信息，因为所有颜色映射在转换阶段已完成
+> - **PixelData 结构优化**: 原先分离的 `gridDimensions` 和 `pixelData` 现在统一为 `PixelData` 对象
+> - **数据完整性**: `PixelData` 包含所有必要信息（mappedData、尺寸、色号系统）
+> - **下载API简化**: 现在只需要传递 `pixelData` 对象即可，无需额外的色号系统参数
+> - **向后兼容**: 保持了 `colorCounts` 和其他统计信息的独立返回
 ```
 
 ### 错误响应

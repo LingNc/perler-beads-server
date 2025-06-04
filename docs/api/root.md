@@ -37,9 +37,7 @@
       "method": "POST",
       "description": "生成并下载图纸图片",
       "parameters": {
-        "pixelData": "array - 像素数据",
-        "gridDimensions": "object - 网格尺寸",
-        "colorCounts": "object - 颜色统计",
+        "pixelData": "PixelData - 包含所有像素数据和元信息的对象",
         "downloadOptions": "object - 下载选项"
       }
     },
@@ -107,12 +105,16 @@
       "method": "POST",
       "contentType": "application/json",
       "body": {
-        "pixelData": "[[...]]",
-        "gridDimensions": "{ N: 50, M: 40 }",
-        "colorCounts": "{ \"M01\": { count: 100, color: \"#FF0000\" } }",
+        "pixelData": {
+          "mappedData": "[[...]]",
+          "width": 50,
+          "height": 40,
+          "colorSystem": "MARD"
+        },
         "downloadOptions": {
           "showGrid": true,
-          "format": "png"
+          "title": "我的拼豆图纸",
+          "dpi": 300
         }
       }
     }
