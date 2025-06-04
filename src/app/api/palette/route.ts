@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
       // 添加预制调色板选项
       presetPalettes.forEach(preset => {
         paletteOptions.push({
-          name: preset.id,
+          // 使用name而不是id
+          name: preset.name,
           description: preset.description || `预制调色板 - ${preset.data.selectedHexValues.length} 种颜色`,
           colorCount: preset.data.selectedHexValues.length
         });
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
           paletteOptions: paletteOptions,
           colorSystems: colorSystems,
           defaultColorSystem: 'MARD',
-          defaultPalette: '291色',
+          defaultPalette: '290色',
           totalColors: totalColors,
           supportsCustomPalette: true
         }

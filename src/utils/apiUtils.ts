@@ -330,15 +330,27 @@ export function getPresetPaletteById(paletteId: string): PresetPalette | null {
   }
 }
 
+// 根据名称获取特定的预制调色板
+export function getPresetPaletteByName(paletteName: string): PresetPalette | null {
+  const presetPalettes = getAvailablePresetPalettes();
+  return presetPalettes.find(palette => palette.name === paletteName) || null;
+}
+
 // 解析预制调色板为标准调色板格式
 export function parsePresetPalette(
-  paletteId: string,
+  paletteNameOrId: string,
   colorSystem: ColorSystem
 ): PaletteColor[] {
-  const presetPalette = getPresetPaletteById(paletteId);
+  // 首先尝试按名称查找
+  let presetPalette = getPresetPaletteByName(paletteNameOrId);
+
+  // 如果按名称找不到，再尝试按ID查找（向后兼容）
+  if (!presetPalette) {
+    presetPalette = getPresetPaletteById(paletteNameOrId);
+  }
 
   if (!presetPalette) {
-    throw new Error(`预制调色板不存在: ${paletteId}`);
+    throw new Error(`预制调色板不存在: ${paletteNameOrId}`);
   }
 
   // 使用现有的解析函数

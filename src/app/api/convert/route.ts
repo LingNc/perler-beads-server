@@ -189,7 +189,12 @@ export async function GET() {
         options: ['dominant', 'average'],
         description: '像素化模式：dominant=卡通模式, average=真实模式'
       },
-      selectedPalette: { type: 'string', default: '291色', description: '使用的调色板' },
+      selectedPalette: {
+        type: 'string',
+        default: '290色',
+        description: '使用的调色板：290色(默认全色板)、custom(自定义调色板)或预制调色板名称',
+        examples: ['290色', 'custom', '144-perler-palette', '120-perler-palette']
+      },
       selectedColorSystem: { type: 'string', default: 'MARD', description: '色号系统' },
       customPalette: {
         type: 'string',
@@ -209,12 +214,15 @@ export async function GET() {
       }
     },
     notes: [
-      '支持自定义调色板，通过customPalette参数传入JSON格式的颜色数据',
-      '默认使用291色调色板，支持MARD、COCO、漫漫、盼盼、咪小窝等色号系统',
+      '支持三种调色板类型：默认调色板(290色)、自定义调色板(custom)和预制调色板',
+      '预制调色板：使用预设的颜色组合，如"144-perler-palette"、"120-perler-palette"等',
+      '自定义调色板：通过customPalette参数传入JSON格式的颜色数据',
+      '默认使用290色调色板，支持MARD、COCO、漫漫、盼盼、咪小窝等色号系统',
       '自定义调色板格式：{"version":"3.0/4.0","selectedHexValues":["#RRGGBB",...]}',
       '版本3.0不包含name字段，版本4.0包含name字段',
       '调色板中的key字段表示色号，用于生成图纸时显示',
-      'colorCounts返回结果中的key为对应色号系统的色号标识'
+      'colorCounts返回结果中的key为对应色号系统的色号标识',
+      'processingParams.paletteSource指示调色板来源：default、custom或preset'
     ]
   });
 }

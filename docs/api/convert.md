@@ -21,7 +21,7 @@
       "options": ["dominant", "average"],
       "description": "像素化模式：dominant=卡通模式, average=真实模式"
     },
-    "selectedPalette": { "type": "string", "default": "291色", "description": "使用的调色板" },
+    "selectedPalette": { "type": "string", "default": "290色", "description": "使用的调色板：290色/custom/144色调色板/168色调色板/97色调色板/120色调色板" },
     "selectedColorSystem": { "type": "string", "default": "MARD", "description": "色号系统：MARD/COCO/漫漫/盼盼/咪小窝" },
     "customPalette": {
       "type": "string",
@@ -46,8 +46,9 @@
     }
   },
   "notes": [
-    "支持自定义调色板，通过customPalette参数传入JSON格式的颜色数据",
-    "默认使用291色调色板，支持5种色号系统：MARD、COCO、漫漫、盼盼、咪小窝",
+    "支持预设调色板和自定义调色板，通过selectedPalette参数选择调色板类型",
+    "预设调色板包括：290色(默认)、144色调色板、168色调色板、97色调色板、120色调色板",
+    "默认使用290色调色板，支持5种色号系统：MARD、COCO、漫漫、盼盼、咪小窝",
     "colorCounts中的key为对应色号系统的色号标识",
     "自定义调色板格式：{\"version\":\"3.0/4.0\",\"selectedHexValues\":[\"#RRGGBB\",...]}",
     "版本3.0不包含name字段，版本4.0包含name字段"
@@ -69,9 +70,19 @@
 | `granularity` | string | ❌ | "50" | 1-200 | 像素化粒度 |
 | `similarityThreshold` | string | ❌ | "30" | 0-100 | 颜色相似度阈值 |
 | `pixelationMode` | string | ❌ | "dominant" | dominant/average | 像素化模式 |
-| `selectedPalette` | string | ❌ | "291色" | 291色/自定义 | 调色板选择 |
+| `selectedPalette` | string | ❌ | "290色" | 290色/custom/预设调色板名称 | 调色板选择 |
 | `selectedColorSystem` | string | ❌ | "MARD" | MARD/COCO/漫漫/盼盼/咪小窝 | 色号系统 |
 | `customPalette` | string | ❌ | - | - | 自定义调色板JSON |
+
+### 调色板选择说明
+
+**可选的调色板：**
+- `"290色"` - 默认290色调色板（支持5种色号系统）
+- `"custom"` - 自定义调色板（需同时提供customPalette参数）
+- `"144色调色板"` - 预设144色调色板
+- `"168色调色板"` - 预设168色调色板
+- `"97色调色板"` - 预设97色调色板
+- `"120色调色板"` - 预设120色调色板
 
 ### 自定义调色板格式
 
@@ -110,7 +121,7 @@
       "M01": {"count": 325, "color": "#E7002F"}
     },
     "totalBeadCount": 625,
-    "paletteName": "291色",
+    "paletteName": "290色",
     "processingParams": {
       "granularity": 50,
       "similarityThreshold": 30,

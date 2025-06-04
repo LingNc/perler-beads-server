@@ -142,7 +142,7 @@ def load_palette_from_file(filename):
 
 def test_custom_palette_validation():
     """测试自定义调色板验证"""
-    print_step(3, "测试自定义调色板验证")
+    print_step(4, "测试自定义调色板验证")
 
     # 测试3.0版本调色板
     palette_3_0 = load_palette_from_file("palette_example_3.0.json")
@@ -237,7 +237,7 @@ def test_custom_palette_validation():
 
 def test_image_conversion_default_palette(palette_data):
     """测试使用默认调色板的图片转换"""
-    print_step(4, "测试图片转换 (默认291色调色板)")
+    print_step(5, "测试图片转换 (默认290色调色板)")
 
     if not os.path.exists(TEST_IMAGE):
         print_error(f"测试图片 {TEST_IMAGE} 不存在")
@@ -308,7 +308,7 @@ def test_image_conversion_default_palette(palette_data):
 
 def test_image_conversion_custom_palette(custom_palettes):
     """测试使用自定义调色板的图片转换"""
-    print_step(5, "测试图片转换 (自定义调色板)")
+    print_step(6, "测试图片转换 (自定义调色板)")
 
     if not custom_palettes:
         print_error("没有有效的自定义调色板，跳过测试")
@@ -334,7 +334,7 @@ def test_image_conversion_custom_palette(custom_palettes):
                 form_data = {
                     'granularity': '20',
                     'pixelationMode': 'dominant',
-                    'selectedPalette': '自定义',
+                    'selectedPalette': 'custom',
                     'selectedColorSystem': 'MARD',
                     'similarityThreshold': '70',
                     'customPalette': json.dumps(palette_3_0)
@@ -364,7 +364,7 @@ def test_image_conversion_custom_palette(custom_palettes):
                 # 检查调色板名称 - 3.0版本应该返回默认名称
                 palette_name = data['paletteName']
                 print(f"🎨 调色板名称: {palette_name}")
-                if palette_name in ["144色", "291色", "自定义调色板"]:
+                if palette_name in ["144色", "290色", "自定义调色板"]:
                     print_success("3.0版本正确返回系统默认名称")
                 else:
                     print_info(f"3.0版本返回名称: {palette_name}")
@@ -404,7 +404,7 @@ def test_image_conversion_custom_palette(custom_palettes):
                 form_data = {
                     'granularity': '20',
                     'pixelationMode': 'average',
-                    'selectedPalette': '自定义',
+                    'selectedPalette': 'custom',
                     'selectedColorSystem': 'MARD',
                     'similarityThreshold': '50',
                     'customPalette': json.dumps(palette_4_0)
@@ -461,9 +461,131 @@ def test_image_conversion_custom_palette(custom_palettes):
 
     return results if results else None
 
+def test_preset_palette_functionality():
+    """测试预制调色板功能"""
+    print_step(3, "测试预制调色板功能")
+
+    try:
+        # 1. 测试调色板API包含预制调色板
+        print("🔍 检查调色板API是否包含预制调色板...")
+        palette_response = requests.get(f"{BASE_URL}/palette")
+
+        if palette_response.status_code != 200:
+            print_error(f"调色板API请求失败: {palette_response.status_code}")
+            return False
+
+        palette_data = palette_response.json()['data']
+        available_palettes = palette_data.get('availablePalettes', [])
+
+        # 检查是否有预制调色板（除了290色和custom之外的选项）
+        preset_palettes = [p for p in available_palettes if p not in ['290色', 'custom']]
+
+        if not preset_palettes:
+            print_error("未发现任何预制调色板")
+            return False
+
+        print_success(f"发现 {len(preset_palettes)} 个预制调色板:")
+        for palette in preset_palettes:
+            print(f"   📦 {palette}")
+
+        # 2. 测试使用预制调色板进行图片转换
+        test_preset_id = preset_palettes[0]  # 使用第一个预制调色板进行测试
+        print(f"\n🎯 使用预制调色板 '{test_preset_id}' 进行图片转换测试...")
+
+        if not os.path.exists(TEST_IMAGE):
+            print_error(f"测试图片不存在: {TEST_IMAGE}")
+            return False
+
+        # 准备转换请求
+        with open(TEST_IMAGE, 'rb') as img_file:
+            files = {'image': img_file}
+            data = {
+                'granularity': 20,
+                'selectedPalette': test_preset_id,
+                'selectedColorSystem': 'MARD',
+                'pixelationMode': 'dominant'
+            }
+
+            start_time = time.time()
+            convert_response = requests.post(f"{BASE_URL}/convert", files=files, data=data)
+            response_time = (time.time() - start_time) * 1000
+
+        print(f"🌐 URL: POST {BASE_URL}/convert")
+        print(f"📝 参数: granularity=20, selectedPalette={test_preset_id}")
+        print(f"⏱️  响应时间: {response_time:.2f}ms")
+        print(f"📊 状态码: {convert_response.status_code}")
+
+        if convert_response.status_code != 200:
+            print_error(f"预制调色板转换失败: {convert_response.status_code}")
+            if convert_response.status_code == 400:
+                error_detail = convert_response.json().get('error', '未知错误')
+                print_error(f"错误详情: {error_detail}")
+            return False
+
+        convert_data = convert_response.json()['data']
+        print_success("预制调色板图片转换成功")
+
+        # 验证返回数据
+        pixel_data = convert_data.get('pixelData')
+        if not pixel_data:
+            print_error("转换结果缺少pixelData")
+            return False
+
+        color_counts = convert_data.get('colorCounts')
+        if not color_counts:
+            print_error("转换结果缺少colorCounts")
+            return False
+
+        palette_name = convert_data.get('paletteName')
+        processing_params = convert_data.get('processingParams', {})
+        palette_source = processing_params.get('paletteSource')
+
+        print(f"📏 图纸尺寸: {pixel_data['width']}x{pixel_data['height']}")
+        print(f"🎨 使用调色板: {palette_name}")
+        print(f"📦 调色板来源: {palette_source}")
+        print(f"🌈 使用颜色数: {len(color_counts)}")
+        print(f"📊 总珠子数: {convert_data.get('totalBeadCount', 0)}")
+
+        # 验证调色板来源应该是 'preset'
+        if palette_source != 'preset':
+            print_error(f"调色板来源应该是 'preset'，实际是 '{palette_source}'")
+            return False
+
+        # 3. 测试下载功能
+        print(f"\n📥 测试预制调色板图纸下载...")
+
+        download_data = {
+            'pixelData': pixel_data,
+            'downloadOptions': {
+                'title': f"预制调色板测试-{test_preset_id}",
+                'showTransparentLabels': False,
+                'showGrid': True,
+                'format': 'png'
+            }
+        }
+
+        download_response = requests.post(f"{BASE_URL}/download", json=download_data)
+
+        if download_response.status_code == 200:
+            # 保存下载的图片
+            output_filename = f"preset_palette_{test_preset_id}_test.png"
+            with open(output_filename, 'wb') as f:
+                f.write(download_response.content)
+            print_success(f"预制调色板图纸下载成功: {output_filename}")
+        else:
+            print_error(f"预制调色板图纸下载失败: {download_response.status_code}")
+            return False
+
+        print_success("预制调色板功能测试全部通过")
+        return True
+
+    except Exception as e:
+        print_error(f"预制调色板测试异常: {e}")
+        return False
+
 def test_pixel_data_interface_validation(convert_data_list):
     """统一验证PixelData接口结构"""
-    print_step(6, "验证PixelData接口结构")
+    print_step(7, "验证PixelData接口结构")
 
     if not convert_data_list:
         print_error("没有转换数据可供验证")
@@ -494,7 +616,7 @@ def test_pixel_data_interface_validation(convert_data_list):
 
 def test_pattern_download(convert_data, output_filename, test_options=None):
     """测试图纸下载"""
-    print_step(7, f"测试图纸下载 ({output_filename})")
+    print_step(8, f"测试图纸下载 ({output_filename})")
 
     if not convert_data:
         print_error("没有转换数据，跳过下载测试")
@@ -567,7 +689,7 @@ def test_pattern_download(convert_data, output_filename, test_options=None):
 
 def test_download_with_title_and_dpi(default_convert_data, custom_convert_data):
     """测试带标题和DPI的下载功能"""
-    print_step(8, "测试标题、DPI和渲染模式功能")
+    print_step(9, "测试标题、DPI和渲染模式功能")
 
     if not default_convert_data and not custom_convert_data:
         print_error("没有可用的转换数据，跳过标题和DPI测试")
@@ -630,7 +752,7 @@ def test_download_with_title_and_dpi(default_convert_data, custom_convert_data):
 
 def test_api_documentation():
     """测试API文档端点"""
-    print_step(9, "测试API文档端点")
+    print_step(10, "测试API文档端点")
 
     # 测试主API文档
     print("🔍 测试主API入口文档...")
@@ -772,7 +894,7 @@ def validate_pixel_data_interface(data):
 
 def test_download_api_interface():
     """测试下载API的新接口是否正确工作"""
-    print_step(10, "测试下载API新接口")
+    print_step(11, "测试下载API新接口")
 
     # 创建一个简单的测试 PixelData
     test_pixel_data = {
@@ -866,6 +988,7 @@ def main():
         'custom_palette': False,
         'default_convert': False,
         'custom_convert': False,
+        'preset_palette': False,
         'pixel_data_validation': False,
         'default_download': False,
         'custom_download': False,
@@ -881,23 +1004,26 @@ def main():
     palette_data = test_palette_api()
     results['palette'] = palette_data is not None
 
-    # 3. 测试自定义调色板验证
+    # 3. 测试预制调色板功能
+    results['preset_palette'] = test_preset_palette_functionality()
+
+    # 4. 测试自定义调色板验证
     custom_palette = test_custom_palette_validation()
     results['custom_palette'] = custom_palette is not None
 
-    # 4. 测试默认调色板图片转换
+    # 5. 测试默认调色板图片转换
     default_convert_data = None
     if palette_data:
         default_convert_data = test_image_conversion_default_palette(palette_data)
         results['default_convert'] = default_convert_data is not None
 
-    # 5. 测试自定义调色板图片转换
+    # 6. 测试自定义调色板图片转换
     custom_convert_data = None
     if custom_palette:
         custom_convert_data = test_image_conversion_custom_palette(custom_palette)
         results['custom_convert'] = custom_convert_data is not None
 
-    # 6. 统一验证PixelData接口结构
+    # 7. 统一验证PixelData接口结构
     convert_data_list = []
     if default_convert_data:
         convert_data_list.append(default_convert_data)
@@ -910,23 +1036,23 @@ def main():
 
     results['pixel_data_validation'] = test_pixel_data_interface_validation(convert_data_list)
 
-    # 7. 测试图纸下载 (默认调色板)
+    # 8. 测试图纸下载 (默认调色板)
     if default_convert_data:
         results['default_download'] = test_pattern_download(
             default_convert_data,
             "default_palette_pattern.png"
         )
 
-    # 8. 测试标题和DPI功能 - 使用真实转换数据
+    # 9. 测试标题和DPI功能 - 使用真实转换数据
     results['title_dpi_download'] = test_download_with_title_and_dpi(
         default_convert_data,
         custom_convert_data
     )
 
-    # 9. 测试API文档
+    # 10. 测试API文档
     results['documentation'] = test_api_documentation()
 
-    # 10. 测试下载API新接口
+    # 11. 测试下载API新接口
     results['download_api_interface'] = test_download_api_interface()
 
     # 测试自定义调色板下载 (作为额外测试，不计入主要结果)
@@ -956,6 +1082,7 @@ def main():
         ('自定义调色板验证', results['custom_palette']),
         ('默认调色板转换', results['default_convert']),
         ('自定义调色板转换', results['custom_convert']),
+        ('预制调色板功能', results['preset_palette']),
         ('PixelData接口验证', results['pixel_data_validation']),
         ('默认调色板下载', results['default_download']),
         ('标题和DPI下载', results['title_dpi_download']),
