@@ -1,16 +1,15 @@
 // API工具函数
-import { createCanvas, loadImage, Image } from 'canvas';
-import { calculatePixelGrid, PixelationMode, PaletteColor, MappedPixel, hexToRgb } from './pixelation';
-import { getMardToHexMapping } from './colorSystemUtils';
-import type { ColorSystem } from './pixelation';
+import { createCanvas, loadImage, Image, Canvas, CanvasRenderingContext2D } from 'canvas';
+import { PixelationMode, PaletteColor, MappedPixel, hexToRgb } from './pixelation';
+import { getMardToHexMapping, getColorKeyByHex, ColorSystem } from './colorSystemUtils';
 
 // 获取调色板数据
-export function getPaletteByName(paletteName: string = '291色'): PaletteColor[] {
+export function getPaletteByName(): PaletteColor[] {
   const mardToHexMapping = getMardToHexMapping();
 
   // 从colorSystemMapping.json获取所有MARD色号并转换为PaletteColor格式
   const fullBeadPalette: PaletteColor[] = Object.entries(mardToHexMapping)
-    .map(([mardKey, hex]) => {
+    .map(([, hex]) => {
       const rgb = hexToRgb(hex);
       if (!rgb) return null;
       return { key: hex, hex, rgb };
@@ -21,10 +20,14 @@ export function getPaletteByName(paletteName: string = '291色'): PaletteColor[]
 }
 
 // 解析自定义调色板
-export function parseCustomPalette(customPaletteData: any): PaletteColor[] {
+export function parseCustomPalette(customPaletteData: unknown): PaletteColor[] {
   // 支持新格式：{ version: "3.0", selectedHexValues: ["#RRGGBB", ...], exportDate: "...", totalColors: N }
-  if (customPaletteData && typeof customPaletteData === 'object' && customPaletteData.selectedHexValues) {
-    const { selectedHexValues, version, totalColors } = customPaletteData;
+  if (customPaletteData &&
+      typeof customPaletteData === 'object' &&
+      'selectedHexValues' in customPaletteData &&
+      customPaletteData.selectedHexValues) {
+    const data = customPaletteData as { selectedHexValues: string[] };
+    const { selectedHexValues } = data;
 
     if (!Array.isArray(selectedHexValues)) {
       throw new Error('selectedHexValues必须是数组格式');
@@ -63,7 +66,7 @@ export function parseCustomPalette(customPaletteData: any): PaletteColor[] {
     const palette: PaletteColor[] = [];
 
     for (let i = 0; i < customPaletteData.length; i++) {
-      const color = customPaletteData[i];
+      const color = customPaletteData[i] as { key?: string; hex?: string };
 
       if (!color.hex || !color.key) {
         throw new Error(`第${i + 1}个颜色缺少必要的hex或key字段`);
@@ -112,7 +115,7 @@ export function calculateColorCounts(pixelData: MappedPixel[][]): { [key: string
 }
 
 // 从Buffer创建Canvas图像
-export async function createImageFromBuffer(buffer: Buffer): Promise<{ image: Image; canvas: any; ctx: any }> {
+export async function createImageFromBuffer(buffer: Buffer): Promise<{ image: Image; canvas: Canvas; ctx: CanvasRenderingContext2D }> {
   const image = await loadImage(buffer);
   const canvas = createCanvas(image.width, image.height);
   const ctx = canvas.getContext('2d');
@@ -122,7 +125,11 @@ export async function createImageFromBuffer(buffer: Buffer): Promise<{ image: Im
 }
 
 // 验证API参数
-export function validateConvertParams(params: any): { isValid: boolean; error?: string } {
+export function validateConvertParams(params: {
+  granularity?: number;
+  similarityThreshold?: number;
+  pixelationMode?: PixelationMode;
+}): { isValid: boolean; error?: string } {
   const { granularity, similarityThreshold, pixelationMode } = params;
 
   if (granularity && (isNaN(granularity) || granularity < 1 || granularity > 200)) {
@@ -141,8 +148,60 @@ export function validateConvertParams(params: any): { isValid: boolean; error?: 
 }
 
 // 生成文件名
-export function generateFilename(params: any): string {
+export function generateFilename(params: {
+  granularity?: number;
+  pixelationMode?: string;
+  selectedPalette?: string;
+}): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const { granularity, pixelationMode, selectedPalette } = params;
   return `perler-beads-${granularity}px-${pixelationMode}-${selectedPalette}-${timestamp}`;
+}
+
+// 过滤透明色统计
+export function filterTransparentColorCounts(colorCounts: { [key: string]: { count: number; color: string } }, showTransparentLabels: boolean): { [key: string]: { count: number; color: string } } {
+  if (showTransparentLabels) {
+    return colorCounts;
+  }
+
+  const filteredCounts: { [key: string]: { count: number; color: string } } = {};
+
+  for (const key in colorCounts) {
+    if (colorCounts.hasOwnProperty(key)) {
+      const colorInfo = colorCounts[key];
+      // 过滤掉T01透明色
+      if (key !== 'T01') {
+        filteredCounts[key] = colorInfo;
+      }
+    }
+  }
+
+  return filteredCounts;
+}
+
+// 过滤颜色统计，排除 T01 透明色（当 showTransparentLabels 为 false 时）
+export function filterColorCountsForBeadUsage(
+  colorCounts: { [key: string]: { count: number; color: string } },
+  selectedColorSystem: ColorSystem,
+  excludeTransparent: boolean = true
+): { filteredCounts: { [key: string]: { count: number; color: string } }; filteredTotal: number } {
+  if (!excludeTransparent) {
+    const total = Object.values(colorCounts).reduce((sum, { count }) => sum + count, 0);
+    return { filteredCounts: colorCounts, filteredTotal: total };
+  }
+
+  const filteredCounts: { [key: string]: { count: number; color: string } } = {};
+  let filteredTotal = 0;
+
+  for (const [hexColor, colorData] of Object.entries(colorCounts)) {
+    const colorKey = getColorKeyByHex(hexColor, selectedColorSystem);
+
+    // 如果不是 T01 透明色，则包含在统计中
+    if (colorKey !== 'T01') {
+      filteredCounts[hexColor] = colorData;
+      filteredTotal += colorData.count;
+    }
+  }
+
+  return { filteredCounts, filteredTotal };
 }

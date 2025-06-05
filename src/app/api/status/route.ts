@@ -43,7 +43,7 @@ export async function GET() {
         status.health.canvas = 'error';
         status.status = 'degraded';
       }
-    } catch (error) {
+    } catch {
       status.health.canvas = 'error';
       status.status = 'degraded';
     }

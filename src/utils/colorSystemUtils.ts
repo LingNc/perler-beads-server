@@ -179,3 +179,40 @@ export function sortColorsByHue<T extends { color: string }>(colors: T[]): T[] {
     return hslB.s - hslA.s;
   });
 }
+
+/**
+ * 按优先级查找透明/白色颜色作为备用色
+ * 优先级顺序: T01 (透明) → H02 (纯白) → H01 (微蓝白) → P12 (浅蓝灰) → 调色板第一色
+ * @param palette 调色板颜色数组
+ * @param colorSystem 色号系统
+ * @returns 找到的备用颜色，如果都没找到则返回调色板第一个颜色
+ */
+export function findTransparentFallbackColor(
+  palette: PaletteColor[],
+  colorSystem: ColorSystem = 'MARD'
+): PaletteColor {
+  if (!palette || palette.length === 0) {
+    throw new Error('调色板不能为空');
+  }
+
+  // 定义优先级颜色代码列表
+  const priorityColorCodes = ['T01', 'H02', 'H01', 'P12'];
+
+  // 按优先级顺序查找颜色
+  for (const colorCode of priorityColorCodes) {
+    const foundColor = palette.find(color => {
+      const hexUppercase = color.hex.toUpperCase();
+      const colorMapping = typedColorSystemMapping[hexUppercase];
+      return colorMapping && colorMapping[colorSystem] === colorCode;
+    });
+
+    if (foundColor) {
+      console.log(`找到优先级颜色 ${colorCode}（${foundColor.hex}）作为透明区域备用色`);
+      return foundColor;
+    }
+  }
+
+  // 如果所有优先级颜色都没找到，使用调色板第一个颜色
+  console.warn('未找到任何优先级透明色（T01/H02/H01/P12），使用调色板第一个颜色作为备用');
+  return palette[0];
+}

@@ -28,7 +28,7 @@ export async function GET() {
           pixelData: 'array - 像素数据',
           gridDimensions: 'object - 网格尺寸',
           colorCounts: 'object - 颜色统计',
-          downloadOptions: 'object - 下载选项'
+          downloadOptions: 'object - 下载选项 (包含title标题、dpi分辨率、renderMode渲染模式、fixedWidth固定宽度)'
         }
       },
       '/api/palette': {
@@ -55,6 +55,10 @@ export async function GET() {
       '图纸下载',
       '颜色统计',
       '自定义调色板验证',
+      '增强的标题功能（高度增加）',
+      '双重渲染模式（DPI/Fixed）',
+      '固定宽度支持',
+      'DPI分辨率控制',
       '多种输出格式'
     ],
     supportedFormats: {
@@ -100,7 +104,25 @@ export async function GET() {
           colorCounts: '{ "颜色1": { count: 100, color: "#FF0000" } }',
           downloadOptions: {
             showGrid: true,
-            format: 'png'
+            title: '我的拼豆图纸',
+            renderMode: 'dpi',
+            dpi: 300
+          }
+        }
+      },
+      downloadPatternFixed: {
+        url: '/api/download',
+        method: 'POST',
+        contentType: 'application/json',
+        body: {
+          pixelData: '[[...]]',
+          gridDimensions: '{ N: 50, M: 40 }',
+          colorCounts: '{ "颜色1": { count: 100, color: "#FF0000" } }',
+          downloadOptions: {
+            showGrid: true,
+            title: '我的拼豆图纸',
+            renderMode: 'fixed',
+            fixedWidth: 1200
           }
         }
       }

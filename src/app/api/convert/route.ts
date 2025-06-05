@@ -7,6 +7,7 @@ import {
   createImageFromBuffer,
   validateConvertParams
 } from '../../../utils/apiUtils';
+import { ColorSystem, findTransparentFallbackColor } from '../../../utils/colorSystemUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     // 创建图像和canvas
-    const { image, canvas, ctx } = await createImageFromBuffer(buffer);
+    const { image, ctx } = await createImageFromBuffer(buffer);
 
     // 获取调色板数据
     let palette: PaletteColor[];
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // 使用默认调色板
-      palette = getPaletteByName(selectedPalette);
+      palette = getPaletteByName();
       if (palette.length === 0) {
         return NextResponse.json({
           success: false,
@@ -81,8 +82,8 @@ export async function POST(request: NextRequest) {
     const N = granularity;
     const M = Math.max(1, Math.round(N * aspectRatio));
 
-    // 获取默认颜色（使用调色板中的第一个颜色作为备用）
-    const defaultColor = palette[0];
+    // 使用优化的透明色查找函数
+    const defaultColor = findTransparentFallbackColor(palette, selectedColorSystem as ColorSystem || 'MARD');
 
     // 执行像素化处理
     const processedData = calculatePixelGrid(
@@ -102,11 +103,8 @@ export async function POST(request: NextRequest) {
     // 计算总珠子数量
     const totalBeadCount = Object.values(colorCounts).reduce((sum, { count }) => sum + count, 0);
 
-    // 生成activeBeadPalette - 从实际使用的颜色中构建
-    const activeBeadPalette = palette.map(color => ({
-      key: color.key,
-      color: color.hex
-    }));
+    // 只返回调色板名称，而不是完整的颜色信息
+    const activeBeadPalette = selectedPalette;
 
     return NextResponse.json({
       success: true,
@@ -177,7 +175,7 @@ export async function GET() {
         pixelData: 'MappedPixel[][]',
         colorCounts: '{ [key: string]: { count: number, color: string } }',
         totalBeadCount: 'number',
-        activeBeadPalette: 'array',
+        activeBeadPalette: 'string (调色板名称)',
         processingParams: 'object (包含paletteSource和customPaletteColors)',
         imageInfo: 'object'
       }
