@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# png
+*.png
+
+tests/*
+!tests/test_all*.py
+!tests/test*.png
+!tests/custom*.json
+!tests/*.ipynb

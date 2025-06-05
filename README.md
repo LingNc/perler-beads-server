@@ -66,6 +66,31 @@
     *   **带 Key 图纸**: 下载带有清晰颜色编码 (Key) 和网格线的 PNG 图纸，忽略外部背景。
     *   **颜色统计图**: 下载包含各颜色 Key、色块、所需数量的 PNG 统计图。
 
+## API 接口
+
+本项目提供完整的 REST API 接口，支持程序化调用图纸生成功能：
+
+*   **完整的API文档**: [API文档](docs/README.md)
+*   **在线文档**: 每个API端点都支持GET请求获取详细使用说明
+*   **支持功能**:
+    *   图片转换为拼豆图纸 (`POST /api/convert`)
+    *   自定义调色板支持 (`POST /api/palette`)
+    *   图纸下载生成 (`POST /api/download`)
+    *   服务状态检查 (`GET /api/status`)
+*   **使用示例**:
+    ```bash
+    # 获取API文档
+    curl http://localhost:3000/api
+
+    # 检查服务状态
+    curl http://localhost:3000/api/status
+
+    # 获取转换接口说明
+    curl http://localhost:3000/api/convert
+    ```
+
+更多API使用详情请参考：[API文档](docs/README.md)
+
 ## 技术实现
 
 *   **框架**: [Next.js](https://nextjs.org/) (React) 与 TypeScript
