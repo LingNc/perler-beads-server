@@ -12,11 +12,11 @@
   "method": "POST",
   "description": "生成并下载拼豆图纸图片",
   "parameters": {
-    "pixelData": { "type": "MappedPixel[][]", "required": true, "description": "像素数据（转换完成后的网格数据）" },
-    "gridDimensions": { "type": "{ N: number, M: number }", "required": true, "description": "网格尺寸（宽度和高度）" },
-    "colorCounts": { "type": "object", "required": true, "description": "颜色统计（各颜色使用数量）" },
-    "totalBeadCount": { "type": "number", "required": true, "description": "总珠子数量" },
-    "selectedColorSystem": { "type": "string", "required": true, "description": "选择的颜色系统" },
+    "pixelData": {
+      "type": "PixelData",
+      "required": true,
+      "description": "包含所有像素数据和元信息的对象（mappedData, width, height, colorSystem）"
+    },
     "downloadOptions": {
       "showGrid": { "type": "boolean", "default": true, "description": "显示网格线" },
       "gridInterval": { "type": "number", "default": 10, "description": "网格间隔" },
@@ -25,7 +25,9 @@
       "includeStats": { "type": "boolean", "default": true, "description": "包含统计信息" },
       "filename": { "type": "string", "description": "自定义文件名" },
       "title": { "type": "string", "description": "图纸标题 - 显示在图片顶部的标题栏中" },
-      "dpi": { "type": "number", "default": 150, "range": "72-600", "description": "图片分辨率 (DPI)" }
+      "dpi": { "type": "number", "default": 150, "range": "72-600", "description": "图片分辨率 (DPI)" },
+      "renderMode": { "type": "string", "default": "dpi", "options": ["dpi", "fixed"], "description": "渲染模式" },
+      "fixedWidth": { "type": "number", "description": "固定宽度（像素，fixed模式）" }
     }
   },
   "response": {
@@ -47,12 +49,19 @@
 
 | 参数 | 类型 | 必需 | 说明 |
 |------|------|------|------|
-| `pixelData` | Array | ✅ | 像素数据 (来自convert API) |
-| `gridDimensions` | Object | ✅ | 网格尺寸 |
-| `colorCounts` | Object | ✅ | 颜色统计 |
-| `totalBeadCount` | Number | ✅ | 总珠子数 |
-| `selectedColorSystem` | String | ✅ | 色号系统 |
+| `pixelData` | PixelData | ✅ | 像素数据对象 (来自convert API，包含mappedData、width、height、colorSystem) |
 | `downloadOptions` | Object | ❌ | 下载选项 |
+
+### PixelData 结构
+
+```typescript
+interface PixelData {
+  mappedData: MappedPixel[][] | null;  // 像素网格数据
+  width: number | null;                 // 网格宽度
+  height: number | null;                // 网格高度
+  colorSystem: ColorSystem;             // 色号系统 (MARD、COCO等)
+}
+```
 
 ### 下载选项
 
@@ -112,30 +121,29 @@
 #### 基础请求
 ```json
 {
-  "pixelData": [
-    [
-      {"key": "#FFFFFF", "color": "#FFFFFF"},
-      {"key": "#E7002F", "color": "#E7002F"}
-    ]
-  ],
-  "gridDimensions": {"N": 25, "M": 25, "width": 25, "height": 25},
-  "colorCounts": {
-    "#FFFFFF": {"count": 300, "color": "#FFFFFF"},
-    "#E7002F": {"count": 325, "color": "#E7002F"}
-  },
-  "totalBeadCount": 625,
-  "selectedColorSystem": "MARD"
+  "pixelData": {
+    "mappedData": [
+      [
+        {"key": "P12", "color": "#FFFFFF", "isExternal": false},
+        {"key": "M01", "color": "#E7002F", "isExternal": false}
+      ]
+    ],
+    "width": 25,
+    "height": 25,
+    "colorSystem": "MARD"
+  }
 }
 ```
 
 #### 完整功能请求
 ```json
 {
-  "pixelData": "...",
-  "gridDimensions": "...",
-  "colorCounts": "...",
-  "totalBeadCount": 625,
-  "selectedColorSystem": "MARD",
+  "pixelData": {
+    "mappedData": "...",
+    "width": 50,
+    "height": 40,
+    "colorSystem": "MARD"
+  },
   "downloadOptions": {
     "showGrid": true,
     "gridInterval": 5,
@@ -252,17 +260,21 @@
 
 ```json
 {
-  "pixelData": [
-    [{"key": "#FFFFFF", "color": "#FFFFFF"}, {"key": "#E7002F", "color": "#E7002F"}],
-    [{"key": "#E7002F", "color": "#E7002F"}, {"key": "#FFFFFF", "color": "#FFFFFF"}]
-  ],
-  "gridDimensions": {"N": 2, "M": 2},
-  "colorCounts": {
-    "#FFFFFF": {"count": 2, "color": "#FFFFFF"},
-    "#E7002F": {"count": 2, "color": "#E7002F"}
+  "pixelData": {
+    "mappedData": [
+      [
+        {"key": "P12", "color": "#FFFFFF", "isExternal": false},
+        {"key": "M01", "color": "#E7002F", "isExternal": false}
+      ],
+      [
+        {"key": "M01", "color": "#E7002F", "isExternal": false},
+        {"key": "P12", "color": "#FFFFFF", "isExternal": false}
+      ]
+    ],
+    "width": 2,
+    "height": 2,
+    "colorSystem": "MARD"
   },
-  "totalBeadCount": 4,
-  "selectedColorSystem": "MARD",
   "downloadOptions": {
     "title": "测试图纸",
     "dpi": 300

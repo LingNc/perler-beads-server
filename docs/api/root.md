@@ -28,7 +28,7 @@
         "granularity": "number - 精细度 (1-200, 默认50)",
         "similarityThreshold": "number - 相似度阈值 (0-100, 默认30)",
         "pixelationMode": "string - 像素化模式 (dominant/average, 默认dominant)",
-        "selectedPalette": "string - 调色板名称 (默认291色)",
+        "selectedPalette": "string - 调色板名称 (290色/custom/预设调色板名称, 默认290色)",
         "selectedColorSystem": "string - 色号系统 (默认MARD)",
         "customPalette": "string - 自定义调色板JSON"
       }
@@ -37,20 +37,18 @@
       "method": "POST",
       "description": "生成并下载图纸图片",
       "parameters": {
-        "pixelData": "array - 像素数据",
-        "gridDimensions": "object - 网格尺寸",
-        "colorCounts": "object - 颜色统计",
+        "pixelData": "PixelData - 包含所有像素数据和元信息的对象",
         "downloadOptions": "object - 下载选项"
       }
     },
     "/api/palette": {
       "method": "GET/POST",
-      "description": "GET: 获取调色板信息; POST: 验证自定义调色板",
+      "description": "GET: 获取调色板信息和预设调色板列表; POST: 验证自定义调色板",
       "parameters": {
         "colorSystem": "string - 色号系统 (可选, GET)",
         "detailed": "boolean - 是否返回详细信息 (可选, GET)",
-        "colors": "array - 自定义颜色数组 (POST验证，旧格式)",
-        "customPalette": "object - 自定义调色板对象 (POST验证，新格式)"
+        "customPalette": "object - 自定义调色板对象 (POST验证)",
+        "colorSystem": "string - 色号系统 (POST验证, 可选, 默认MARD)"
       }
     },
     "/api/status": {
@@ -62,7 +60,8 @@
     "图片转拼豆图纸",
     "多种像素化模式",
     "自定义调色板支持",
-    "291色完整调色板",
+    "预设调色板支持 (144色/97色/120色/168色)",
+    "290色完整调色板",
     "5种色号系统",
     "图纸下载",
     "颜色统计",
@@ -88,7 +87,7 @@
         "image": "[图片文件]",
         "granularity": 50,
         "pixelationMode": "dominant",
-        "selectedPalette": "291色"
+        "selectedPalette": "290色"
       }
     },
     "convertWithCustomPalette": {
@@ -98,8 +97,19 @@
       "formData": {
         "image": "[图片文件]",
         "granularity": 50,
-        "selectedPalette": "自定义",
+        "selectedPalette": "custom",
         "customPalette": "[{\"key\":\"红色\",\"hex\":\"#FF0000\"}]"
+      }
+    },
+    "convertWithPresetPalette": {
+      "url": "/api/convert",
+      "method": "POST",
+      "contentType": "multipart/form-data",
+      "formData": {
+        "image": "[图片文件]",
+        "granularity": 50,
+        "selectedPalette": "144色拼豆调色板",
+        "pixelationMode": "dominant"
       }
     },
     "downloadPattern": {
@@ -107,12 +117,16 @@
       "method": "POST",
       "contentType": "application/json",
       "body": {
-        "pixelData": "[[...]]",
-        "gridDimensions": "{ N: 50, M: 40 }",
-        "colorCounts": "{ \"颜色1\": { count: 100, color: \"#FF0000\" } }",
+        "pixelData": {
+          "mappedData": "[[...]]",
+          "width": 50,
+          "height": 40,
+          "colorSystem": "MARD"
+        },
         "downloadOptions": {
           "showGrid": true,
-          "format": "png"
+          "title": "我的拼豆图纸",
+          "dpi": 300
         }
       }
     }

@@ -21,30 +21,37 @@
       "options": ["dominant", "average"],
       "description": "像素化模式：dominant=卡通模式, average=真实模式"
     },
-    "selectedPalette": { "type": "string", "default": "291色", "description": "使用的调色板" },
-    "selectedColorSystem": { "type": "string", "default": "MARD", "description": "色号系统" },
+    "selectedPalette": { "type": "string", "default": "290色", "description": "使用的调色板：290色/custom/144色调色板/168色调色板/97色调色板/120色调色板" },
+    "selectedColorSystem": { "type": "string", "default": "MARD", "description": "色号系统：MARD/COCO/漫漫/盼盼/咪小窝" },
     "customPalette": {
       "type": "string",
       "required": false,
-      "description": "JSON格式的自定义调色板数据"
+      "description": "JSON格式的自定义调色板数据，格式：{\"version\":\"3.0/4.0\",\"selectedHexValues\":[\"#RRGGBB\",...]}"
     }
   },
   "response": {
     "success": "boolean",
     "data": {
-      "gridDimensions": "{ N: number, M: number, width: number, height: number }",
-      "pixelData": "MappedPixel[][]",
-      "colorCounts": "{ [key: string]: { count: number, color: string } }",
+      "pixelData": {
+        "mappedData": "MappedPixel[][]",
+        "width": "number",
+        "height": "number",
+        "colorSystem": "string"
+        },
+      "colorCounts": "{ [key: string]: { count: number, color: string } } - key为色号",
       "totalBeadCount": "number",
-      "activeBeadPalette": "string (调色板名称)",
+      "paletteName": "string (使用的调色板名称)",
       "processingParams": "object",
       "imageInfo": "object"
     }
   },
   "notes": [
-    "支持自定义调色板，通过customPalette参数传入JSON格式的颜色数据",
-    "默认使用291色调色板",
-    "自定义调色板格式：[{\"key\": \"颜色名称\", \"hex\": \"#RRGGBB\"}]"
+    "支持预设调色板和自定义调色板，通过selectedPalette参数选择调色板类型",
+    "预设调色板包括：290色(默认)、144色调色板、168色调色板、97色调色板、120色调色板",
+    "默认使用290色调色板，支持5种色号系统：MARD、COCO、漫漫、盼盼、咪小窝",
+    "colorCounts中的key为对应色号系统的色号标识",
+    "自定义调色板格式：{\"version\":\"3.0/4.0\",\"selectedHexValues\":[\"#RRGGBB\",...]}",
+    "版本3.0不包含name字段，版本4.0包含name字段"
   ]
 }
 ```
@@ -63,13 +70,22 @@
 | `granularity` | string | ❌ | "50" | 1-200 | 像素化粒度 |
 | `similarityThreshold` | string | ❌ | "30" | 0-100 | 颜色相似度阈值 |
 | `pixelationMode` | string | ❌ | "dominant" | dominant/average | 像素化模式 |
-| `selectedPalette` | string | ❌ | "291色" | 291色/自定义 | 调色板选择 |
+| `selectedPalette` | string | ❌ | "290色" | 290色/custom/预设调色板名称 | 调色板选择 |
 | `selectedColorSystem` | string | ❌ | "MARD" | MARD/COCO/漫漫/盼盼/咪小窝 | 色号系统 |
 | `customPalette` | string | ❌ | - | - | 自定义调色板JSON |
 
+### 调色板选择说明
+
+**可选的调色板：**
+- `"290色"` - 默认290色调色板（支持5种色号系统）
+- `"custom"` - 自定义调色板（需同时提供customPalette参数）
+- `"144色调色板"` - 预设144色调色板
+- `"168色调色板"` - 预设168色调色板
+- `"97色调色板"` - 预设97色调色板
+- `"120色调色板"` - 预设120色调色板
+
 ### 自定义调色板格式
 
-**新格式:**
 ```json
 {
   "version": "3.0",
@@ -79,13 +95,9 @@
 }
 ```
 
-**旧格式:**
-```json
-[
-  {"key": "红色", "hex": "#E7002F"},
-  {"key": "白色", "hex": "#FEFFFF"}
-]
-```
+**版本说明:**
+- 版本3.0：不包含name字段
+- 版本4.0：包含name字段
 
 ### 成功响应
 
@@ -93,29 +105,27 @@
 {
   "success": true,
   "data": {
-    "gridDimensions": {
-      "N": 25,
-      "M": 25,
+    "pixelData": {
+      "mappedData": [
+        [
+          {"key": "P12", "color": "#FFFFFF", "isExternal": false},
+          {"key": "M01", "color": "#E7002F", "isExternal": false}
+        ]
+      ],
       "width": 25,
-      "height": 25
+      "height": 25,
+      "colorSystem": "MARD"
     },
-    "pixelData": [
-      [
-        {"key": "#FFFFFF", "color": "#FFFFFF"},
-        {"key": "#E7002F", "color": "#E7002F"}
-      ]
-    ],
     "colorCounts": {
-      "#FFFFFF": {"count": 300, "color": "#FFFFFF"},
-      "#E7002F": {"count": 325, "color": "#E7002F"}
+      "P12": {"count": 300, "color": "#FFFFFF"},
+      "M01": {"count": 325, "color": "#E7002F"}
     },
     "totalBeadCount": 625,
-    "activeBeadPalette": "291色",
+    "paletteName": "290色",
     "processingParams": {
       "granularity": 50,
       "similarityThreshold": 30,
       "pixelationMode": "dominant",
-      "selectedPalette": "291色",
       "selectedColorSystem": "MARD",
       "paletteSource": "default"
     },
@@ -129,9 +139,10 @@
 ```
 
 > **API更新说明:**
-> - `activeBeadPalette` 参数格式已更改：原先返回颜色数组，现在仅返回调色板名称字符串
-> - 此更改减少了API响应大小，提高了效率
-> - 下载API已不再需要调色板信息，因为所有颜色映射在转换阶段已完成
+> - **PixelData 结构优化**: 原先分离的 `gridDimensions` 和 `pixelData` 现在统一为 `PixelData` 对象
+> - **数据完整性**: `PixelData` 包含所有必要信息（mappedData、尺寸、色号系统）
+> - **下载API简化**: 现在只需要传递 `pixelData` 对象即可，无需额外的色号系统参数
+> - **向后兼容**: 保持了 `colorCounts` 和其他统计信息的独立返回
 ```
 
 ### 错误响应

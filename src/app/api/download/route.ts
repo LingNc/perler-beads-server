@@ -1,26 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateImageBuffer } from '../../../utils/serverImageDownloader';
 import { GridDownloadOptions } from '../../../types/downloadTypes';
-import { filterColorCountsForBeadUsage } from '../../../utils/apiUtils';
-
-// 下载选项类型定义
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
       pixelData,
-      gridDimensions,
-      colorCounts,
-      selectedColorSystem,
       downloadOptions = {}
     } = body;
 
     // 验证必要参数
-    if (!pixelData || !gridDimensions || !colorCounts || !selectedColorSystem) {
+    if (!pixelData || !pixelData.mappedData || !pixelData.width || !pixelData.height) {
       return NextResponse.json({
         success: false,
-        error: '缺少必要的数据参数'
+        error: '缺少必要的像素数据参数'
       }, { status: 400 });
     }
 
@@ -32,32 +26,17 @@ export async function POST(request: NextRequest) {
       gridLineColor: '#CCCCCC',
       includeStats: true,
       showTransparentLabels: false, // 默认不显示透明色标识
-      title: downloadOptions.title,
       dpi: downloadOptions.dpi || 150,
-      renderMode: downloadOptions.renderMode || 'dpi',
       fixedWidth: downloadOptions.fixedWidth,
       ...downloadOptions
     };
 
-    // 如果不显示透明标识，则从统计中排除 T01 透明色
-    const { filteredCounts, filteredTotal } = filterColorCountsForBeadUsage(
-      colorCounts,
-      selectedColorSystem,
-      !options.showTransparentLabels
-    );
-
-    // 使用原项目的图片生成功能
+    // 使用server的图片生成功能
     const imageBuffer = await generateImageBuffer({
-      mappedPixelData: pixelData,
-      gridDimensions,
-      colorCounts: filteredCounts,
-      totalBeadCount: filteredTotal,
-      options,
-      selectedColorSystem,
-      title: options.title,
-      dpi: options.dpi,
-      renderMode: options.renderMode,
-      fixedWidth: options.fixedWidth
+      title: downloadOptions.title,
+      pixelData,
+      renderMode: downloadOptions.renderMode || 'dpi',
+      options
     });
 
     // 不再生成文件名，客户端会自己处理
@@ -89,11 +68,7 @@ export async function GET() {
     method: 'POST',
     description: '生成并下载拼豆图纸图片',
     parameters: {
-      pixelData: { type: 'MappedPixel[][]', required: true, description: '像素数据（转换完成后的网格数据）' },
-      gridDimensions: { type: '{ N: number, M: number }', required: true, description: '网格尺寸（宽度和高度）' },
-      colorCounts: { type: 'object', required: true, description: '颜色统计（各颜色使用数量）' },
-      totalBeadCount: { type: 'number', required: true, description: '总珠子数量' },
-      selectedColorSystem: { type: 'string', required: true, description: '选择的颜色系统（如MARD、COCO等）' },
+      pixelData: { type: 'PixelData', required: true, description: '包含所有像素数据和元信息的对象（mappedData, width, height, colorSystem）' },
       downloadOptions: {
         showGrid: { type: 'boolean', default: true, description: '显示网格线' },
         gridInterval: { type: 'number', default: 10, description: '网格间隔' },

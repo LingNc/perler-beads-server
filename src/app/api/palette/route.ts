@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMardToHexMapping, getColorSystemOptions } from '../../../utils/colorSystemUtils';
+import { getMardToHexMapping, getColorSystemOptions, ColorSystem } from '../../../utils/colorSystemUtils';
 import { hexToRgb } from '../../../utils/pixelation';
+import { validateCustomPalette, getAvailablePresetPalettes } from '../../../utils/apiUtils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,10 +35,24 @@ export async function GET(request: NextRequest) {
     } else {
       // 返回简单的调色板选项
       const totalColors = Object.keys(mardToHexMapping).length;
+
+      // 获取预制调色板
+      const presetPalettes = getAvailablePresetPalettes();
+
       const paletteOptions = [
-        { name: '291色', description: '完整色板', colorCount: totalColors },
-        { name: '自定义', description: '用户上传的调色板', colorCount: 0 }
+        { name: 'custom', description: '用户上传的调色板', colorCount: 0 },
+        { name: '290色', description: '完整色板', colorCount: totalColors }
       ];
+
+      // 添加预制调色板选项
+      presetPalettes.forEach(preset => {
+        paletteOptions.push({
+          // 使用name而不是id
+          name: preset.name,
+          description: preset.description || `预制调色板 - ${preset.data.selectedHexValues.length} 种颜色`,
+          colorCount: preset.data.selectedHexValues.length
+        });
+      });
 
       const colorSystems = getColorSystemOptions();
 
@@ -48,7 +63,7 @@ export async function GET(request: NextRequest) {
           paletteOptions: paletteOptions,
           colorSystems: colorSystems,
           defaultColorSystem: 'MARD',
-          defaultPalette: '291色',
+          defaultPalette: '290色',
           totalColors: totalColors,
           supportsCustomPalette: true
         }
@@ -72,109 +87,29 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { colors, customPalette } = body;
+    const { customPalette, colorSystem = 'MARD' } = body;
 
-    // 支持新格式：{ version: "3.0", selectedHexValues: ["#RRGGBB", ...] }
-    if (customPalette && customPalette.selectedHexValues) {
-      const { selectedHexValues } = customPalette;
+    // 使用通用验证函数进行验证
+    const validationResult = validateCustomPalette(customPalette, colorSystem as ColorSystem, {
+      checkColorSystemExistence: true, // API 验证时需要检查色号系统存在性
+      allowEmptyPalette: false
+    });
 
-      if (!Array.isArray(selectedHexValues)) {
-        return NextResponse.json({
-          success: false,
-          error: 'selectedHexValues必须是数组格式'
-        }, { status: 400 });
-      }
-
-      // 验证颜色格式
-      const validatedColors = [];
-      const errors = [];
-
-      for (let i = 0; i < selectedHexValues.length; i++) {
-        const hexValue = selectedHexValues[i];
-
-        if (typeof hexValue !== 'string' || !hexValue.startsWith('#')) {
-          errors.push(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
-          continue;
-        }
-
-        const rgb = hexToRgb(hexValue);
-        if (!rgb) {
-          errors.push(`第${i + 1}个颜色的hex值格式无效: ${hexValue}`);
-          continue;
-        }
-
-        validatedColors.push({
-          key: hexValue,
-          hex: hexValue,
-          rgb: rgb
-        });
-      }
-
-      if (errors.length > 0) {
-        return NextResponse.json({
-          success: false,
-          error: '颜色验证失败',
-          details: errors
-        }, { status: 400 });
-      }
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          validatedColors: validatedColors,
-          totalColors: validatedColors.length,
-          version: '3.0',
-          message: '自定义调色板验证成功'
-        }
-      });
-    }
-
-    // 支持旧格式：{ colors: [{ key: "颜色名", hex: "#RRGGBB" }] }
-    if (!Array.isArray(colors)) {
+    if (!validationResult.isValid) {
       return NextResponse.json({
         success: false,
-        error: '颜色数据必须是数组格式'
-      }, { status: 400 });
-    }
-
-    // 验证颜色格式
-    const validatedColors = [];
-    const errors = [];
-
-    for (let i = 0; i < colors.length; i++) {
-      const color = colors[i];
-
-      if (!color.hex || !color.key) {
-        errors.push(`第${i + 1}个颜色缺少必要的hex或key字段`);
-        continue;
-      }
-
-      const rgb = hexToRgb(color.hex);
-      if (!rgb) {
-        errors.push(`第${i + 1}个颜色的hex值格式无效: ${color.hex}`);
-        continue;
-      }
-
-      validatedColors.push({
-        key: color.key,
-        hex: color.hex,
-        rgb: rgb
-      });
-    }
-
-    if (errors.length > 0) {
-      return NextResponse.json({
-        success: false,
-        error: '颜色验证失败',
-        details: errors
+        error: validationResult.errors.length === 1 ? '颜色验证失败' : '颜色验证失败',
+        details: validationResult.errors
       }, { status: 400 });
     }
 
     return NextResponse.json({
       success: true,
       data: {
-        validatedColors: validatedColors,
-        totalColors: validatedColors.length,
+        validatedColors: validationResult.validatedColors,
+        totalColors: validationResult.validatedColors!.length,
+        version: customPalette.version,
+        colorSystem: colorSystem,
         message: '自定义调色板验证成功'
       }
     });

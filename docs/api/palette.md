@@ -17,12 +17,32 @@
 {
   "success": true,
   "data": {
-    "availablePalettes": ["291色", "自定义"],
+    "availablePalettes": ["290色", "144色调色板", "168色调色板", "97色调色板", "120色调色板", "自定义"],
     "paletteOptions": [
       {
-        "name": "291色",
+        "name": "290色",
         "description": "完整色板",
-        "colorCount": 291
+        "colorCount": 290
+      },
+      {
+        "name": "144色调色板",
+        "description": "精选144种常用颜色",
+        "colorCount": 144
+      },
+      {
+        "name": "168色调色板",
+        "description": "扩展168种丰富颜色",
+        "colorCount": 168
+      },
+      {
+        "name": "97色调色板",
+        "description": "基础97种核心颜色",
+        "colorCount": 97
+      },
+      {
+        "name": "120色调色板",
+        "description": "平衡的120种颜色选择",
+        "colorCount": 120
       },
       {
         "name": "自定义",
@@ -38,8 +58,8 @@
       {"key": "咪小窝", "name": "咪小窝"}
     ],
     "defaultColorSystem": "MARD",
-    "defaultPalette": "291色",
-    "totalColors": 291,
+    "defaultPalette": "290色",
+    "totalColors": 290,
     "supportsCustomPalette": true
   }
 }
@@ -52,7 +72,7 @@
   "success": true,
   "data": {
     "colorSystem": "MARD",
-    "totalColors": 291,
+    "totalColors": 290,
     "colors": [
       {
         "key": "A01",
@@ -71,7 +91,7 @@
 
 ### 请求格式
 
-**兼容格式 (推荐):**
+**自定义调色板格式:**
 ```json
 {
   "customPalette": {
@@ -79,19 +99,27 @@
     "selectedHexValues": ["#E7002F", "#FEFFFF", "#00FF00"],
     "exportDate": "2025-06-03T16:09:31.956Z",
     "totalColors": 3
-  }
+  },
+  "colorSystem": "MARD"
 }
 ```
 
-**简易格式:**
-```json
-{
-  "colors": [
-    {"key": "红色", "hex": "#E7002F"},
-    {"key": "白色", "hex": "#FEFFFF"}
-  ]
-}
-```
+**请求参数:**
+| 参数 | 类型 | 必需 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `customPalette` | object | 是 | - | 自定义调色板对象 |
+| `colorSystem` | string | 否 | "MARD" | 色号系统，用于验证颜色 |
+
+**版本说明:**
+- 版本3.0：不包含name字段
+- 版本4.0：包含name字段
+
+**色号系统:**
+- MARD：MARD色号系统
+- COCO：COCO色号系统
+- 漫漫：漫漫色号系统
+- 盼盼：盼盼色号系统
+- 咪小窝：咪小窝色号系统
 
 ### 成功响应
 
@@ -101,13 +129,14 @@
   "data": {
     "validatedColors": [
       {
-        "key": "#E7002F",
+        "key": "M01",
         "hex": "#E7002F",
         "rgb": {"r": 231, "g": 0, "b": 47}
       }
     ],
-    "totalColors": 2,
+    "totalColors": 1,
     "version": "3.0",
+    "colorSystem": "MARD",
     "message": "自定义调色板验证成功"
   }
 }
@@ -120,7 +149,8 @@
   "success": false,
   "error": "颜色验证失败",
   "details": [
-    "第1个颜色的hex值格式无效: #GGGGGG"
+    "第1个颜色的hex值格式无效: #GGGGGG",
+    "第2个颜色 #FF0000 在 MARD 色号系统中不存在"
   ]
 }
 ```
