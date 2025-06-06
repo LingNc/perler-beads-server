@@ -10,6 +10,7 @@ import {
 } from '../../../utils/apiUtils';
 import { ColorSystem, findTransparentFallbackColor } from '../../../utils/colorSystemUtils';
 import { CustomPalette } from '@/types/paletteTypes';
+import { getEndpointDoc } from '../../../config/apiDocs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -175,54 +176,6 @@ export async function POST(request: NextRequest) {
 
 // 支持GET请求返回API文档
 export async function GET() {
-  return NextResponse.json({
-    endpoint: '/api/convert',
-    method: 'POST',
-    description: '将图片转换为拼豆图纸',
-    parameters: {
-      image: { type: 'File', required: true, description: '要转换的图片文件' },
-      granularity: { type: 'number', default: 50, range: '1-200', description: '图纸精细度' },
-      similarityThreshold: { type: 'number', default: 30, range: '0-100', description: '颜色相似度阈值' },
-      pixelationMode: {
-        type: 'string',
-        default: 'dominant',
-        options: ['dominant', 'average'],
-        description: '像素化模式：dominant=卡通模式, average=真实模式'
-      },
-      selectedPalette: {
-        type: 'string',
-        default: '290色',
-        description: '使用的调色板：290色(默认全色板)、custom(自定义调色板)或预制调色板名称',
-        examples: ['290色', 'custom', '144-perler-palette', '120-perler-palette']
-      },
-      selectedColorSystem: { type: 'string', default: 'MARD', description: '色号系统' },
-      customPalette: {
-        type: 'string',
-        required: false,
-        description: 'JSON格式的自定义调色板数据，格式：{"version":"3.0/4.0","selectedHexValues":["#RRGGBB",...]}'
-      }
-    },
-    response: {
-      success: 'boolean',
-      data: {
-        pixelData: 'PixelData (包含 mappedData, width, height, colorSystem)',
-        colorCounts: '{ [key: string]: { count: number, color: string } } (key为色号)',
-        totalBeadCount: 'number',
-        paletteName: 'string (使用的调色板名称)',
-        processingParams: 'object (包含paletteSource和customPaletteColors)',
-        imageInfo: 'object'
-      }
-    },
-    notes: [
-      '支持三种调色板类型：默认调色板(290色)、自定义调色板(custom)和预制调色板',
-      '预制调色板：使用预设的颜色组合，如"144-perler-palette"、"120-perler-palette"等',
-      '自定义调色板：通过customPalette参数传入JSON格式的颜色数据',
-      '默认使用290色调色板，支持MARD、COCO、漫漫、盼盼、咪小窝等色号系统',
-      '自定义调色板格式：{"version":"3.0/4.0","selectedHexValues":["#RRGGBB",...]}',
-      '版本3.0不包含name字段，版本4.0包含name字段',
-      '调色板中的key字段表示色号，用于生成图纸时显示',
-      'colorCounts返回结果中的key为对应色号系统的色号标识',
-      'processingParams.paletteSource指示调色板来源：default、custom或preset'
-    ]
-  });
+  const docConfig = getEndpointDoc('convert');
+  return NextResponse.json(docConfig);
 }

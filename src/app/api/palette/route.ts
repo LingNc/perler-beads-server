@@ -2,12 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getMardToHexMapping, getColorSystemOptions, ColorSystem } from '../../../utils/colorSystemUtils';
 import { hexToRgb } from '../../../utils/pixelation';
 import { validateCustomPalette, getAvailablePresetPalettes } from '../../../utils/apiUtils';
+import { getEndpointDoc } from '../../../config/apiDocs';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const colorSystem = searchParams.get('colorSystem') || 'MARD';
     const detailed = searchParams.get('detailed') === 'true';
+    const docs = searchParams.get('docs') === 'true';
+
+    // 如果请求文档，返回API文档
+    if (docs) {
+      const docConfig = getEndpointDoc('palette');
+      return NextResponse.json(docConfig);
+    }
 
     // 获取调色板数据
     const mardToHexMapping = getMardToHexMapping();

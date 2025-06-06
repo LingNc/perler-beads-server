@@ -22,7 +22,9 @@
       "gridInterval": { "type": "number", "default": 10, "description": "网格间隔" },
       "showCoordinates": { "type": "boolean", "default": true, "description": "显示坐标" },
       "gridLineColor": { "type": "string", "default": "#CCCCCC", "description": "网格线颜色" },
+      "outerBorderColor": { "type": "string", "default": "#141414", "description": "外边框颜色 - 围绕网格的边框颜色，可选参数" },
       "includeStats": { "type": "boolean", "default": true, "description": "包含统计信息" },
+      "showTransparentLabels": { "type": "boolean", "default": false, "description": "是否在透明色（T01）上显示色号标识" },
       "filename": { "type": "string", "description": "自定义文件名" },
       "title": { "type": "string", "description": "图纸标题 - 显示在图片顶部的标题栏中" },
       "dpi": { "type": "number", "default": 150, "range": "72-600", "description": "图片分辨率 (DPI)" },
@@ -71,7 +73,9 @@ interface PixelData {
 | `gridInterval` | number | 10 | 1-50 | 网格间隔 |
 | `showCoordinates` | boolean | true | - | 显示坐标 |
 | `gridLineColor` | string | "#CCCCCC" | - | 网格线颜色 |
+| `outerBorderColor` | string | "#141414" | - | **NEW** 外边框颜色 |
 | `includeStats` | boolean | true | - | 包含统计信息 |
+| `showTransparentLabels` | boolean | false | - | **NEW** 显示透明色标识 |
 | `title` | string | - | - | **NEW** 图纸标题（高度已增加） |
 | `dpi` | number | 150 | 72-600 | **NEW** 图片分辨率（DPI模式） |
 | `renderMode` | string | "dpi" | "dpi"\|"fixed" | **NEW** 渲染模式 |
@@ -116,6 +120,30 @@ interface PixelData {
 - **示例**: `"fixedWidth": 1200`
 - **注意**: 如果未指定且为fixed模式，将自动回退到DPI模式
 
+#### 🆕 外边框颜色功能 (`outerBorderColor`)
+- **描述**: 为网格外围添加可自定义颜色的边框
+- **默认值**: `"#141414"` (深灰色)
+- **样式**: 围绕整个网格区域的实线边框
+- **位置**: 网格最外层边界
+- **颜色格式**: 支持十六进制颜色代码 (如 #FF0000)
+- **示例**:
+  - `"outerBorderColor": "#000000"` - 纯黑色边框
+  - `"outerBorderColor": "#FF0000"` - 红色边框
+  - `"outerBorderColor": "#CCCCCC"` - 浅灰色边框
+- **用途**: 增强图纸边界识别，美化打印效果
+
+#### 🆕 透明色标识功能 (`showTransparentLabels`)
+- **描述**: 控制是否在透明色（T01）单元格中显示色号标识
+- **默认值**: `false` (不显示)
+- **行为**:
+  - `true`: 在T01透明色单元格中显示"T01"文字标识
+  - `false`: T01透明色单元格保持空白，不显示任何文字
+- **用途**:
+  - 设计阶段：显示标识便于识别透明区域
+  - 制作阶段：隐藏标识保持图纸简洁
+- **统计影响**: 无论此选项如何设置，T01都不会计入豆子用量统计
+- **示例**: `"showTransparentLabels": true`
+
 ### 请求示例
 
 #### 基础请求
@@ -149,10 +177,29 @@ interface PixelData {
     "gridInterval": 5,
     "showCoordinates": true,
     "gridLineColor": "#999999",
+    "outerBorderColor": "#000000",
     "includeStats": true,
+    "showTransparentLabels": false,
     "title": "我的拼豆图纸 - 爱心图案",
     "renderMode": "dpi",
     "dpi": 300
+  }
+}
+```
+
+#### 自定义边框颜色请求
+```json
+{
+  "pixelData": "...",
+  "downloadOptions": {
+    "title": "彩色边框图纸",
+    "renderMode": "fixed",
+    "fixedWidth": 1200,
+    "showGrid": true,
+    "gridLineColor": "#CCCCCC",
+    "outerBorderColor": "#FF0000",
+    "showTransparentLabels": true,
+    "includeStats": true
   }
 }
 ```
@@ -161,15 +208,14 @@ interface PixelData {
 ```json
 {
   "pixelData": "...",
-  "gridDimensions": "...",
-  "colorCounts": "...",
-  "totalBeadCount": 625,
-  "selectedColorSystem": "MARD",
   "downloadOptions": {
     "title": "高分辨率拼豆图纸",
     "renderMode": "dpi",
     "dpi": 300,
-    "showGrid": true
+    "showGrid": true,
+    "gridLineColor": "#DDDDDD",
+    "outerBorderColor": "#141414",
+    "showTransparentLabels": false
   }
 }
 ```

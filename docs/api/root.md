@@ -38,7 +38,19 @@
       "description": "生成并下载图纸图片",
       "parameters": {
         "pixelData": "PixelData - 包含所有像素数据和元信息的对象",
-        "downloadOptions": "object - 下载选项"
+        "downloadOptions": {
+          "showGrid": "boolean - 显示网格线 (默认true)",
+          "gridInterval": "number - 网格间隔 (默认10)",
+          "showCoordinates": "boolean - 显示坐标 (默认true)",
+          "gridLineColor": "string - 网格线颜色 (默认#CCCCCC)",
+          "outerBorderColor": "string - 外边框颜色 (默认#141414)",
+          "includeStats": "boolean - 包含统计信息 (默认true)",
+          "showTransparentLabels": "boolean - 显示透明色标识 (默认false)",
+          "title": "string - 图纸标题",
+          "dpi": "number - 图片分辨率 (默认150)",
+          "renderMode": "string - 渲染模式 (dpi/fixed, 默认dpi)",
+          "fixedWidth": "number - 固定宽度(px) - fixed模式必需"
+        }
       }
     },
     "/api/palette": {
@@ -125,8 +137,35 @@
         },
         "downloadOptions": {
           "showGrid": true,
+          "gridLineColor": "#CCCCCC",
+          "outerBorderColor": "#141414",
+          "showTransparentLabels": false,
           "title": "我的拼豆图纸",
-          "dpi": 300
+          "dpi": 300,
+          "renderMode": "dpi"
+        }
+      }
+    },
+    "downloadPatternCustomBorder": {
+      "url": "/api/download",
+      "method": "POST",
+      "contentType": "application/json",
+      "description": "自定义边框颜色的下载示例",
+      "body": {
+        "pixelData": {
+          "mappedData": "[[...]]",
+          "width": 50,
+          "height": 40,
+          "colorSystem": "MARD"
+        },
+        "downloadOptions": {
+          "showGrid": true,
+          "gridLineColor": "#DDDDDD",
+          "outerBorderColor": "#FF0000",
+          "showTransparentLabels": true,
+          "title": "彩色边框图纸",
+          "renderMode": "fixed",
+          "fixedWidth": 1200
         }
       }
     }
