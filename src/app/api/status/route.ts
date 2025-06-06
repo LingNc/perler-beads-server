@@ -1,16 +1,14 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { getEndpointDoc } from '../../../config/apiDocs';
 
-export async function GET(request?: NextRequest) {
+export async function GET(request: NextRequest) {
   // 如果请求文档，返回API文档
-  if (request) {
-    const { searchParams } = new URL(request.url);
-    const docs = searchParams.get('docs') === 'true';
+  const { searchParams } = new URL(request.url);
+  const docs = searchParams.get('docs') === 'true';
 
-    if (docs) {
-      const docConfig = getEndpointDoc('status');
-      return NextResponse.json(docConfig);
-    }
+  if (docs) {
+    const docConfig = getEndpointDoc('status');
+    return NextResponse.json(docConfig);
   }
 
   const startTime = Date.now();

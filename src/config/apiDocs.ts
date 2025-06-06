@@ -1,17 +1,22 @@
 // 中央化的API文档配置
 // 所有API端点的文档从这里读取，避免重复定义
 
-import { colorDistance } from "@/utils/pixelation";
+// 定义基础类型别名，用于各处需要表示基本数据类型的场景
+type BaseType = string | number | boolean | object | null;
+// 定义未知类型别名，用于表示未知的复杂结构
+type UnknownType = unknown;
 
-interface Mode {
+interface EnumValue {
   enumName: string;
   description: string;
   usage: string;
   note?: string;
 }
-interface MapString {
-  [key: string]: string | MapString;
+
+interface Mode {
+  [key: string]: EnumValue;
 }
+
 
 interface ApiParameter {
   type: string;
@@ -19,12 +24,12 @@ interface ApiParameter {
   // 子参数（如果是对象或数组类型）
   Parameters?: Record<string, ApiParameter>;
   required?: boolean;
-  default?: any;
+  default?: BaseType;
   range?: string;
   options?: string[];
   enum?: string[];
   enumDescription?: Mode;
-  examples?: any[];
+  examples?: BaseType[];
 }
 
 export type Parameter = Record<string, ApiParameter> | ApiParameter;
@@ -35,7 +40,7 @@ export interface ApiEndpointDoc {
   description: string;
   parameters?: Parameter;
   response?: Parameter;
-  examples?: MapString;
+  examples?: Record<string, UnknownType>; // 使用 UnknownType 替代 unknown 保持命名一致性
   notes?: string[];
 }
 
@@ -291,7 +296,7 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
         type: 'PixelData',
         required: true,
         description: '像素数据对象 (来自convert API，包含mappedData、width、height、colorSystem)',
-        subParameters: {
+        Parameters: {
           mappedData: {
             type: 'MappedPixel[][]',
             description: '像素网格数据，二维数组，每个元素包含色号和坐标',
@@ -301,91 +306,101 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
           }
         }
       },
-      // PixelData结构定义
-      _pixelData_structure: {
-        _title: 'PixelData',
-        _structure: `interface PixelData {
-  mappedData: MappedPixel[][] | null;  // 像素网格数据
-  width: number | null;                 // 网格宽度
-  height: number | null;                // 网格高度
-  colorSystem: ColorSystem;             // 色号系统 (MARD、COCO等)
-}`,
-      },
+      // PixelData结构定义已移入pixelData.Parameters
       downloadOptions: {
-        showGrid: {
-          type: 'boolean',
-          default: true,
-          description: '显示网格线'
-        },
-        gridInterval: {
-          type: 'number',
-          default: 10,
-          description: '网格间隔'
-        },
-        showCoordinates: {
-          type: 'boolean',
-          default: true,
-          description: '显示坐标'
-        },
-        gridLineColor: {
-          type: 'string',
-          default: '#CCCCCC',
-          description: '网格线颜色'
-        },
-        outerBorderColor: {
-          type: 'string',
-          default: '#141414',
-          description: '外边框颜色 - 围绕网格的边框颜色，可选参数'
-        },
-        includeStats: {
-          type: 'boolean',
-          default: true,
-          description: '包含统计信息'
-        },
-        showTransparentLabels: {
-          type: 'boolean',
-          default: false,
-          description: '是否在透明色（T01）上显示色号标识'
-        },
-        title: {
-          type: 'string',
-          description: '图纸标题 - 显示在图片顶部的标题栏中，高度已增加'
-        },
-        dpi: {
-          type: 'number',
-          default: 150,
-          description: '图片分辨率 (DPI) - DPI模式下使用'
-        },
-        renderMode: {
-          type: 'string',
-          default: 'dpi',
-          enum: ['dpi', 'fixed'],
-          description: '渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式'
-        },
-        fixedWidth: {
-          type: 'number',
-          description: '固定宽度（像素）- fixed模式下必需，指定图片的横向宽度'
+        type: 'object',
+        description: '下载选项配置',
+        Parameters: {
+          showGrid: {
+            type: 'boolean',
+            default: true,
+            description: '显示网格线'
+          },
+          gridInterval: {
+            type: 'number',
+            default: 10,
+            description: '网格间隔'
+          },
+          showCoordinates: {
+            type: 'boolean',
+            default: true,
+            description: '显示坐标'
+          },
+          gridLineColor: {
+            type: 'string',
+            default: '#CCCCCC',
+            description: '网格线颜色'
+          },
+          outerBorderColor: {
+            type: 'string',
+            default: '#141414',
+            description: '外边框颜色 - 围绕网格的边框颜色，可选参数'
+          },
+          includeStats: {
+            type: 'boolean',
+            default: true,
+            description: '包含统计信息'
+          },
+          showTransparentLabels: {
+            type: 'boolean',
+            default: false,
+            description: '是否在透明色（T01）上显示色号标识'
+          },
+          title: {
+            type: 'string',
+            description: '图纸标题 - 显示在图片顶部的标题栏中，高度已增加'
+          },
+          dpi: {
+            type: 'number',
+            default: 150,
+            description: '图片分辨率 (DPI) - DPI模式下使用'
+          },
+          renderMode: {
+            type: 'string',
+            default: 'dpi',
+            enum: ['dpi', 'fixed'],
+            description: '渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式',
+            enumDescription: {
+              dpi: {
+                enumName: 'DPI模式',
+                description: 'DPI模式 - 基于DPI设置图片分辨率',
+                usage: '适用于需要特定分辨率的场景，如打印等'
+              },
+              fixed: {
+                enumName: '固定宽度模式',
+                description: '固定宽度模式 - 根据指定的像素宽度渲染',
+                usage: '适用于需要固定尺寸的场景，系统会自动计算单元格大小',
+                note: '如果未指定fixedWidth，将自动使用默认DPI模式'
+              }
+            }
+          },
+          fixedWidth: {
+            type: 'number',
+            description: '固定宽度（像素）- fixed模式下必需，指定图片的横向宽度'
+          }
         }
       }
     },
-    renderModes: {
-      dpi: {
-        description: 'DPI模式 - 基于DPI设置图片分辨率',
-        parameters: ['dpi'],
-        defaultDpi: 150,
-        usage: '适用于需要特定分辨率的场景，如打印等'
-      },
-      fixed: {
-        description: '固定宽度模式 - 根据指定的像素宽度渲染',
-        parameters: ['fixedWidth'],
-        usage: '适用于需要固定尺寸的场景，系统会自动计算单元格大小',
-        note: '如果未指定fixedWidth，将自动使用默认DPI模式'
-      }
-    },
     response: {
-      contentType: 'image/png',
-      headers: {
-        'Content-Disposition': 'attachment; filename="..."'
+      type: 'binary',
+      description: '图片数据',
+      Parameters: {
+        contentType: {
+          type: 'string',
+          description: '内容类型',
+          default: 'image/png'
+        },
+        headers: {
+          type: 'object',
+          description: '响应头信息',
+          Parameters: {
+            'Content-Disposition': {
+              type: 'string',
+              description: '内容处理方式，指示浏览器下载文件',
+              default: 'attachment; filename="..."'
+            }
+          }
+        }
       }
     },
     examples: {
@@ -449,7 +464,24 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
       customPalette: {
         type: 'object',
         required: false,
-        description: '自定义调色板对象 (POST验证)'
+        description: '自定义调色板对象 (POST验证)',
+        Parameters: {
+          version: {
+            type: 'string',
+            description: '调色板版本，支持"3.0"或"4.0"',
+            examples: ["3.0", "4.0"]
+          },
+          selectedHexValues: {
+            type: 'string[]',
+            description: '调色板颜色值数组，包含十六进制颜色值',
+            examples: [["#FF0000", "#00FF00", "#0000FF"]]
+          },
+          name: {
+            type: 'string',
+            description: '调色板名称 (仅4.0版本)',
+            required: false
+          }
+        }
       },
       colorSystem_post: {
         type: 'string',
@@ -457,7 +489,115 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
         default: 'MARD',
         description: '色号系统 (POST验证, 可选, 默认MARD)'
       }
-    }
+    },
+    response: {
+      type: 'object',
+      description: '调色板信息',
+      Parameters: {
+        // GET 响应
+        success: {
+          type: 'boolean',
+          description: '请求是否成功'
+        },
+        defaultPalette: {
+          type: 'object',
+          description: '默认调色板信息',
+          Parameters: {
+            paletteData: {
+              type: 'array',
+              description: '调色板颜色数据',
+              examples: [
+                [
+                  { "key": "A01", "color": "#FFFFFF", "name": "白色" },
+                  { "key": "B02", "color": "#FF0000", "name": "红色" }
+                ]
+              ]
+            },
+            totalColors: {
+              type: 'number',
+              description: '颜色总数'
+            },
+            colorSystem: {
+              type: 'string',
+              description: '色号系统'
+            }
+          }
+        },
+        presetPalettes: {
+          type: 'array',
+          description: '预设调色板列表',
+          examples: [
+            [
+              { "id": "144-perler-palette", "name": "144色拼豆调色板", "colors": 144 },
+              { "id": "120-perler-palette", "name": "120色拼豆调色板", "colors": 120 }
+            ]
+          ]
+        },
+        // POST 验证响应
+        isValid: {
+          type: 'boolean',
+          description: '自定义调色板是否有效（POST验证）'
+        },
+        errors: {
+          type: 'array',
+          description: '验证错误信息（POST验证）',
+          examples: [
+            ["颜色格式无效", "调色板为空"]
+          ]
+        },
+        processedPalette: {
+          type: 'object',
+          description: '处理后的调色板（POST验证）',
+          Parameters: {
+            totalColors: {
+              type: 'number',
+              description: '颜色总数'
+            },
+            paletteData: {
+              type: 'array',
+              description: '处理后的调色板数据',
+              examples: [
+                [
+                  { "key": "C01", "color": "#FF0000", "name": "红色" },
+                  { "key": "C02", "color": "#00FF00", "name": "绿色" }
+                ]
+              ]
+            }
+          }
+        }
+      }
+    },
+    examples: {
+      getDefault: {
+        description: '获取默认调色板',
+        parameters: {
+          colorSystem: 'MARD',
+          detailed: 'false'
+        }
+      },
+      getDetailed: {
+        description: '获取详细调色板信息',
+        parameters: {
+          colorSystem: 'MARD',
+          detailed: 'true'
+        }
+      },
+      validateCustomPalette: {
+        description: '验证自定义调色板',
+        parameters: {
+          customPalette: '{"version":"4.0","selectedHexValues":["#FF0000","#00FF00","#0000FF"],"name":"我的调色板"}',
+          colorSystem_post: 'MARD'
+        }
+      }
+    },
+    notes: [
+      'GET请求用于获取调色板信息和预设调色板列表',
+      'POST请求用于验证自定义调色板',
+      '支持的色号系统包括：MARD、COCO、漫漫、盼盼、咪小窝等',
+      '自定义调色板格式：{"version":"3.0/4.0","selectedHexValues":["#RRGGBB",...]}',
+      '版本3.0不包含name字段，版本4.0包含name字段',
+      'detailed=true参数会返回更多颜色信息，包括RGB值和HSV值'
+    ]
   },
 
   status: {
@@ -465,13 +605,74 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
     method: 'GET',
     description: '获取API状态信息',
     response: {
-      service: 'string',
-      status: 'string',
-      timestamp: 'string',
-      uptime: 'number',
-      version: 'string',
-      health: 'object'
-    }
+      type: 'object',
+      description: 'API状态信息',
+      Parameters: {
+        service: {
+          type: 'string',
+          description: '服务名称'
+        },
+        status: {
+          type: 'string',
+          description: '服务状态（active、degraded、maintenance等）'
+        },
+        timestamp: {
+          type: 'string',
+          description: '当前时间戳，ISO格式'
+        },
+        uptime: {
+          type: 'number',
+          description: '服务运行时间（秒）'
+        },
+        version: {
+          type: 'string',
+          description: 'API版本号'
+        },
+        health: {
+          type: 'object',
+          description: '健康状态对象',
+          Parameters: {
+            database: {
+              type: 'string',
+              description: '数据库连接状态'
+            },
+            storage: {
+              type: 'string',
+              description: '存储服务状态'
+            },
+            cache: {
+              type: 'string',
+              description: '缓存服务状态'
+            }
+          }
+        }
+      },
+      examples: [
+        {
+          service: "七卡瓦拼豆图纸生成器API",
+          status: "active",
+          timestamp: "2023-06-01T12:00:00Z",
+          uptime: 3600,
+          version: "1.0.0",
+          health: {
+            database: "healthy",
+            storage: "healthy",
+            cache: "healthy"
+          }
+        }
+      ]
+    },
+    examples: {
+      standardStatus: {
+        description: '标准状态查询',
+        parameters: {}
+      }
+    },
+    notes: [
+      '此端点提供API服务的实时状态信息',
+      '正常运行时status字段应为"active"',
+      '如需监控服务健康状态，建议定期检查此端点'
+    ]
   }
 };
 
@@ -516,10 +717,10 @@ export function getEndpointDoc(endpointName: string): ApiEndpointDoc | null {
 }
 
 // 获取所有端点的简化信息（用于根API）
-export function getAllEndpointsInfo(): Record<string, any> {
-  const endpoints: Record<string, any> = {};
+export function getAllEndpointsInfo(): Record<string, unknown> {
+  const endpoints: Record<string, unknown> = {};
 
-  Object.entries(API_DOCS).forEach(([key, doc]) => {
+  Object.entries(API_DOCS).forEach(([, doc]) => {
     endpoints[doc.endpoint] = {
       method: doc.method,
       description: doc.description,
@@ -531,7 +732,7 @@ export function getAllEndpointsInfo(): Record<string, any> {
 }
 
 // 简化参数结构（用于概览）
-function simplifyParameters(params: Record<string, any>): Record<string, string> {
+function simplifyParameters(params: Parameter): Record<string, string> {
   const simplified: Record<string, string> = {};
 
   Object.entries(params).forEach(([key, param]) => {
@@ -541,9 +742,13 @@ function simplifyParameters(params: Record<string, any>): Record<string, string>
       simplified[key] = `${param.type} - ${param.description}${defaultText}`;
     } else if (typeof param === 'object') {
       // 嵌套参数对象
-      Object.entries(param).forEach(([subKey, subParam]: [string, any]) => {
-        const defaultText = subParam.default ? ` (默认${subParam.default})` : '';
-        simplified[subKey] = `${subParam.type} - ${subParam.description}${defaultText}`;
+      Object.entries(param).forEach(([subKey, subParam]) => {
+        // 确保是 ApiParameter 类型
+        if (typeof subParam === 'object' && subParam !== null && 'type' in subParam) {
+          const paramType = subParam as ApiParameter;
+          const defaultText = paramType.default ? ` (默认${paramType.default})` : '';
+          simplified[subKey] = `${paramType.type} - ${paramType.description || ''}${defaultText}`;
+        }
       });
     }
   });
@@ -551,8 +756,30 @@ function simplifyParameters(params: Record<string, any>): Record<string, string>
   return simplified;
 }
 
+// 定义根API响应的类型
+interface RootApiResponse {
+  name: string;
+  version: string;
+  description: string;
+  features: string[];
+  supportedFormats: {
+    input: string[];
+    output: string[];
+  };
+  limits: {
+    maxFileSize: string;
+    maxImageDimensions: string;
+    maxGranularity: number;
+    minGranularity: number;
+  };
+  status: string;
+  timestamp: string;
+  endpoints: Record<string, unknown>;
+  examples: Record<string, unknown>;
+}
+
 // 生成完整的根API响应
-export function generateRootApiResponse(): any {
+export function generateRootApiResponse(): RootApiResponse {
   return {
     ...API_INFO,
     status: 'active',
