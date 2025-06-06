@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       gridInterval: 10,
       showCoordinates: true,
       gridLineColor: '#CCCCCC',
+      outerBorderColor: '#141414', // 默认外边框颜色
       includeStats: true,
       showTransparentLabels: false, // 默认不显示透明色标识
       dpi: downloadOptions.dpi || 150,
