@@ -6,6 +6,7 @@ export type GridDownloadOptions = {
   gridInterval: number;
   showCoordinates: boolean;
   gridLineColor: string;
+  outerBorderColor?: string;      // 外边框颜色
   includeStats: boolean;
   dpi?: number;
   fixedWidth?: number;           // 固定宽度（像素）
