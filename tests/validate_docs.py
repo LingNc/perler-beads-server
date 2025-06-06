@@ -26,15 +26,15 @@ def fetch_json(url: str) -> Optional[Dict[str, Any]]:
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        print(f"❌ 网络错误: {e}")
+        print(f"ERROR: 网络错误: {e}")
         return None
     except json.JSONDecodeError as e:
-        print(f"❌ JSON解析错误: {e}")
+        print(f"ERROR: JSON解析错误: {e}")
         return None
 
 def validate_endpoint(endpoint: Dict[str, str]) -> Dict[str, Any]:
     """验证单个端点"""
-    print(f"📋 检查 {endpoint['name']} ({endpoint['path']})")
+    print(f"检查 {endpoint['name']} ({endpoint['path']})")
 
     url = f"{API_BASE}{endpoint['path']}"
     response = fetch_json(url)
@@ -70,9 +70,9 @@ def validate_endpoint(endpoint: Dict[str, str]) -> Dict[str, Any]:
     passed = all(checks.values())
 
     if passed:
-        print(f"✅ {endpoint['name']}: 通过")
+        print(f"SUCCESS: {endpoint['name']}: 通过")
     else:
-        print(f"❌ {endpoint['name']}: 失败")
+        print(f"FAILED: {endpoint['name']}: 失败")
         print(f"   详情: {json.dumps(checks, indent=2, ensure_ascii=False)}")
 
     # 准备响应摘要
@@ -93,7 +93,7 @@ def validate_endpoint(endpoint: Dict[str, str]) -> Dict[str, Any]:
 
 def validate_all_docs() -> bool:
     """验证所有API文档"""
-    print('🔍 验证API文档一致性...\n')
+    print('验证API文档一致性...\n')
 
     results = []
     all_passed = True
@@ -108,11 +108,11 @@ def validate_all_docs() -> bool:
         print()  # 空行分隔
 
     # 打印汇总结果
-    print('📊 验证结果汇总:')
+    print('验证结果汇总:')
     print('=' * 20)
 
     for result in results:
-        status = '✅' if result['passed'] else '❌'
+        status = 'PASS' if result['passed'] else 'FAIL'
         print(f"{status} {result['endpoint']}")
 
         if 'response' in result and result['response']:
@@ -122,26 +122,26 @@ def validate_all_docs() -> bool:
             print(indented_response)
 
     # 关键新功能检查
-    print('\n🎯 关键新功能检查:')
+    print('\n关键新功能检查:')
 
     download_result = next((r for r in results if r['endpoint'] == 'download'), None)
     if download_result and 'checks' in download_result:
         checks = download_result['checks']
-        print(f"   外边框颜色参数: {'✅' if checks.get('hasOuterBorderColor') else '❌'}")
-        print(f"   透明标识参数: {'✅' if checks.get('hasShowTransparentLabels') else '❌'}")
+        print(f"   外边框颜色参数: {'PASS' if checks.get('hasOuterBorderColor') else 'FAIL'}")
+        print(f"   透明标识参数: {'PASS' if checks.get('hasShowTransparentLabels') else 'FAIL'}")
 
     root_result = next((r for r in results if r['endpoint'] == 'root'), None)
     if root_result and 'checks' in root_result:
         checks = root_result['checks']
-        print(f"   根API新功能: {'✅' if checks.get('hasNewFeatures') else '❌'}")
+        print(f"   根API新功能: {'PASS' if checks.get('hasNewFeatures') else 'FAIL'}")
 
     # 总体结果
-    print(f"\n🏆 总体结果: {'全部通过! 🎉' if all_passed else '存在问题 ⚠️'}")
+    print(f"\n总体结果: {'SUCCESS: 全部通过!' if all_passed else 'WARNING: 存在问题'}")
 
     if all_passed:
-        print('\n✨ API文档重构成功完成！')
-        print('📝 现在只需要在 src/config/apiDocs.ts 中维护文档')
-        print('🔄 添加新参数时无需更新多个文件')
+        print('\nSUCCESS: API文档重构成功完成！')
+        print('现在只需要在 src/config/apiDocs.ts 中维护文档')
+        print('添加新参数时无需更新多个文件')
 
     return all_passed
 
@@ -151,10 +151,10 @@ def main():
         success = validate_all_docs()
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:
-        print('\n\n⏹️ 验证已取消')
+        print('\n\n验证已取消')
         sys.exit(1)
     except Exception as e:
-        print(f'\n❌ 验证脚本执行失败: {e}')
+        print(f'\nERROR: 验证脚本执行失败: {e}')
         sys.exit(1)
 
 if __name__ == '__main__':

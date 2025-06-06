@@ -1,156 +1,25 @@
-# 调色板管理 API
+# GET: 获取调色板信息和预设调色板列表; POST: 验证自定义调色板
 
-## GET `/api/palette`
+## `GET/POST /api/palette`
 
-获取调色板信息。
+GET: 获取调色板信息和预设调色板列表; POST: 验证自定义调色板
 
-### 请求参数
+## 参数
 
-| 参数 | 类型 | 必需 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `colorSystem` | string | 否 | "MARD" | 颜色系统 |
-| `detailed` | string | 否 | "false" | 是否返回详细颜色信息 |
+- **`colorSystem`** (`string`)
+  - 描述: 色号系统 (可选, GET)
 
-### 基础响应
+- **`detailed`** (`boolean`)
+  - 描述: 是否返回详细信息 (可选, GET)
 
-```json
-{
-  "success": true,
-  "data": {
-    "availablePalettes": ["290色", "144色调色板", "168色调色板", "97色调色板", "120色调色板", "自定义"],
-    "paletteOptions": [
-      {
-        "name": "290色",
-        "description": "完整色板",
-        "colorCount": 290
-      },
-      {
-        "name": "144色调色板",
-        "description": "精选144种常用颜色",
-        "colorCount": 144
-      },
-      {
-        "name": "168色调色板",
-        "description": "扩展168种丰富颜色",
-        "colorCount": 168
-      },
-      {
-        "name": "97色调色板",
-        "description": "基础97种核心颜色",
-        "colorCount": 97
-      },
-      {
-        "name": "120色调色板",
-        "description": "平衡的120种颜色选择",
-        "colorCount": 120
-      },
-      {
-        "name": "自定义",
-        "description": "用户上传的调色板",
-        "colorCount": 0
-      }
-    ],
-    "colorSystems": [
-      {"key": "MARD", "name": "MARD"},
-      {"key": "COCO", "name": "COCO"},
-      {"key": "漫漫", "name": "漫漫"},
-      {"key": "盼盼", "name": "盼盼"},
-      {"key": "咪小窝", "name": "咪小窝"}
-    ],
-    "defaultColorSystem": "MARD",
-    "defaultPalette": "290色",
-    "totalColors": 290,
-    "supportsCustomPalette": true
-  }
-}
-```
+- **`customPalette`** (`object`)
+  - 描述: 自定义调色板对象 (POST验证)
 
-### 详细响应 (detailed=true)
+- **`colorSystem_post`** (`string`)
+  - 默认值: `MARD`
+  - 描述: 色号系统 (POST验证, 可选, 默认MARD)
 
-```json
-{
-  "success": true,
-  "data": {
-    "colorSystem": "MARD",
-    "totalColors": 290,
-    "colors": [
-      {
-        "key": "A01",
-        "hex": "#FAF4C8",
-        "rgb": {"r": 250, "g": 244, "b": 200},
-        "colorSystem": "MARD"
-      }
-    ]
-  }
-}
-```
+---
 
-## POST `/api/palette`
-
-验证自定义调色板。
-
-### 请求格式
-
-**自定义调色板格式:**
-```json
-{
-  "customPalette": {
-    "version": "3.0",
-    "selectedHexValues": ["#E7002F", "#FEFFFF", "#00FF00"],
-    "exportDate": "2025-06-03T16:09:31.956Z",
-    "totalColors": 3
-  },
-  "colorSystem": "MARD"
-}
-```
-
-**请求参数:**
-| 参数 | 类型 | 必需 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `customPalette` | object | 是 | - | 自定义调色板对象 |
-| `colorSystem` | string | 否 | "MARD" | 色号系统，用于验证颜色 |
-
-**版本说明:**
-- 版本3.0：不包含name字段
-- 版本4.0：包含name字段
-
-**色号系统:**
-- MARD：MARD色号系统
-- COCO：COCO色号系统
-- 漫漫：漫漫色号系统
-- 盼盼：盼盼色号系统
-- 咪小窝：咪小窝色号系统
-
-### 成功响应
-
-```json
-{
-  "success": true,
-  "data": {
-    "validatedColors": [
-      {
-        "key": "M01",
-        "hex": "#E7002F",
-        "rgb": {"r": 231, "g": 0, "b": 47}
-      }
-    ],
-    "totalColors": 1,
-    "version": "3.0",
-    "colorSystem": "MARD",
-    "message": "自定义调色板验证成功"
-  }
-}
-```
-
-### 错误响应
-
-```json
-{
-  "success": false,
-  "error": "颜色验证失败",
-  "details": [
-    "第1个颜色的hex值格式无效: #GGGGGG",
-    "第2个颜色 #FF0000 在 MARD 色号系统中不存在"
-  ]
-}
-```
+*此文档由 `scripts/generate_docs.py` 自动生成，请勿手动编辑。*
+*配置来源: `src/config/apiDocs.ts`*

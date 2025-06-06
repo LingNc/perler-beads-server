@@ -1,67 +1,27 @@
-# 状态检查 API
+# 获取API状态信息
 
-## GET `/api/status`
+## `GET /api/status`
 
-获取API服务的运行状态和系统信息。本接口本身就是状态文档，无需额外的文档端点。
+获取API状态信息
 
-### 请求
+## 参数
 
-- **方法**: GET
-- **URL**: `/api/status`
-- **参数**: 无
+此端点不需要参数。
 
-### 响应
+## 响应格式
 
 ```json
 {
-  "service": "perler-beads-api",
-  "status": "healthy",
-  "timestamp": "2025-06-03T10:00:00.000Z",
-  "uptime": 3600.5,
-  "version": "1.0.0",
-  "environment": "development",
-  "health": {
-    "api": "ok",
-    "canvas": "ok",
-    "memory": {
-      "used": 128,
-      "total": 256,
-      "unit": "MB"
-    },
-    "responseTime": 15
-  },
-  "features": {
-    "imageConversion": true,
-    "downloadGeneration": true,
-    "paletteManagement": true,
-    "multipleFormats": true
-  },
-  "limits": {
-    "maxFileSize": "10MB",
-    "supportedFormats": ["jpg", "jpeg", "png", "gif", "bmp", "webp"],
-    "maxGranularity": 200
-  }
+  "service": "string",
+  "status": "string",
+  "timestamp": "string",
+  "uptime": "number",
+  "version": "string",
+  "health": "object"
 }
 ```
 
-### 状态说明
+---
 
-- `status`: `"healthy"` (正常) / `"degraded"` (降级) / `"error"` (错误)
-- `health.api`: API服务状态
-- `health.canvas`: Canvas库状态
-- `health.memory`: 内存使用情况
-
-### 错误响应
-
-```json
-{
-  "service": "perler-beads-api",
-  "status": "error",
-  "timestamp": "2025-06-03T10:00:00.000Z",
-  "error": "错误描述",
-  "health": {
-    "api": "error",
-    "responseTime": 20
-  }
-}
-```
+*此文档由 `scripts/generate_docs.py` 自动生成，请勿手动编辑。*
+*配置来源: `src/config/apiDocs.ts`*
