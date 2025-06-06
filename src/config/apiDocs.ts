@@ -1,26 +1,42 @@
 // 中央化的API文档配置
 // 所有API端点的文档从这里读取，避免重复定义
 
-export interface ApiParameter {
+import { colorDistance } from "@/utils/pixelation";
+
+interface Mode {
+  enumName: string;
+  description: string;
+  usage: string;
+  note?: string;
+}
+interface MapString {
+  [key: string]: string | MapString;
+}
+
+interface ApiParameter {
   type: string;
+  description?: string;
+  // 子参数（如果是对象或数组类型）
+  Parameters?: Record<string, ApiParameter>;
   required?: boolean;
   default?: any;
   range?: string;
   options?: string[];
   enum?: string[];
-  description: string;
+  enumDescription?: Mode;
   examples?: any[];
 }
+
+export type Parameter = Record<string, ApiParameter> | ApiParameter;
 
 export interface ApiEndpointDoc {
   endpoint: string;
   method: string;
   description: string;
-  parameters?: Record<string, ApiParameter | Record<string, ApiParameter>>;
-  response?: Record<string, any>;
-  examples?: Record<string, any>;
+  parameters?: Parameter;
+  response?: Parameter;
+  examples?: MapString;
   notes?: string[];
-  renderModes?: Record<string, any>;
 }
 
 // API端点文档定义
@@ -71,14 +87,186 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
       }
     },
     response: {
-      success: 'boolean',
-      data: {
-        pixelData: 'PixelData (包含 mappedData, width, height, colorSystem)',
-        colorCounts: '{ [key: string]: { count: number, color: string } } (key为色号)',
-        totalBeadCount: 'number',
-        paletteName: 'string (使用的调色板名称)',
-        processingParams: 'object (包含paletteSource和customPaletteColors)',
-        imageInfo: 'object'
+      type: 'object',
+      description: '转换结果',
+      Parameters: {
+        success: {
+          type: 'boolean',
+          description: '转换是否成功'
+        },
+        data: {
+          type: 'object',
+          Parameters: {
+            pixelData: {
+              type: 'PixelData',
+              description: 'PixelData (包含 mappedData, width, height, colorSystem)',
+              Parameters: {
+                mappedData: {
+                  type: 'MappedPixel[][]',
+                  description: '像素网格数据，二维数组，每个元素包含色号，色值和额外属性',
+                  examples: [
+                    [
+                      [
+                        { "key": "H07", "color": "#000000" },
+                        { "key": "F11", "color": "#5A2121" },  // ...更多像素数据
+                      ],
+                      [
+                        { "key": "H07", "color": "#000000" },
+                        { "key": "F11", "color": "#5A2121" },  // ...更多像素数据
+                      ]
+                    ]
+                  ]
+                },
+                width: {
+                  type: 'number',
+                  description: '网格宽度'
+                },
+                height: {
+                  type: 'number',
+                  description: '网格高度'
+                },
+                colorSystem: {
+                  type: 'string',
+                  description: '色号系统 (MARD、COCO等)'
+                }
+              }
+            },
+            colorCounts: {
+              type: 'Record<string, object>',
+              description: '颜色统计信息，key为色号，value为包含count和color的对象',
+              Parameters: {
+                A01: {
+                  type: 'object',
+                  description: '颜色统计信息对象',
+                  Parameters: {
+                    count: {
+                      type: 'number',
+                      description: '该色号的数量'
+                    },
+                    color: {
+                      type: 'string',
+                      description: '该色号的颜色值'
+                    }
+                  }
+                }
+              },
+              examples: [
+                {
+                  "A01": { "count": 10, "color": "#FFFFFF" },
+                  "B02": { "count": 5, "color": "#FF0000" }
+                }
+              ]
+            },
+            totalBeadCount: {
+              type: 'number',
+              description: '总拼豆数量'
+            },
+            paletteName: {
+              type: 'string',
+              description: '使用的调色板名称'
+            },
+            processingParams: {
+              type: 'object',
+              description: '处理参数对象，包含调色板来源和自定义调色板颜色',
+              Parameters: {
+                paletteSource: {
+                  type: 'string',
+                  description: '调色板来源：default（默认调色板）、custom（自定义调色板）或preset（预设调色板）'
+                },
+                customPaletteColors: {
+                  type: 'string',
+                  description: '自定义调色板颜色数据，格式为JSON字符串'
+                }
+              }
+            },
+            imageInfo: {
+              type: 'object',
+              description: '图片信息对象，包含原始图片尺寸和宽高比',
+              Parameters: {
+                originalWidth: {
+                  type: 'number',
+                  description: '原始图片宽度'
+                },
+                originalHeight: {
+                  type: 'number',
+                  description: '原始图片高度'
+                },
+                aspectRatio: {
+                  type: 'number',
+                  description: '图片宽高比 (width / height)'
+                }
+              }
+            }
+          }
+        }
+      },
+      examples: [
+        {
+          success: true,
+          data: {
+            pixelData: {
+              mappedData: [
+                [
+                  { key: 'H07', color: '#000000' },
+                  { key: 'F11', color: '#5A2121' }
+                ],
+                [
+                  { key: 'H07', color: '#000000' },
+                  { key: 'F11', color: '#5A2121' }
+                ]
+              ],
+              width: 50,
+              height: 40,
+              colorSystem: 'MARD'
+            },
+            colorCounts: {
+              A01: { count: 10, color: '#FFFFFF' },
+              B02: { count: 5, color: '#FF0000' }
+            },
+            totalBeadCount: 1000,
+            paletteName: '290色',
+            processingParams: {
+              paletteSource: 'default',
+              customPaletteColors: ''
+            },
+            imageInfo: {
+              originalWidth: 800,
+              originalHeight: 600,
+              aspectRatio: 1.33
+            }
+          }
+        }
+      ]
+    },
+    examples: {
+      basic: {
+        description: '基本转换示例',
+        parameters: {
+          image: '[图片文件]',
+          granularity: '50',
+          similarityThreshold: '30',
+          pixelationMode: 'dominant',
+          selectedPalette: '290色',
+          selectedColorSystem: 'MARD'
+        }
+      },
+      customPalette: {
+        description: '使用自定义调色板转换示例',
+        parameters: {
+          image: '[图片文件]',
+          granularity: '50',
+          selectedPalette: 'custom',
+          customPalette: '{"version":"4.0","selectedHexValues":["#FF0000","#00FF00","#0000FF"]}'
+        }
+      },
+      presetPalette: {
+        description: '使用预设调色板转换示例',
+        parameters: {
+          image: '[图片文件]',
+          granularity: '50',
+          selectedPalette: '144-perler-palette',
+          pixelationMode: 'dominant'
+        }
       }
     },
     notes: [
@@ -102,7 +290,26 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
       pixelData: {
         type: 'PixelData',
         required: true,
-        description: '包含所有像素数据和元信息的对象（mappedData, width, height, colorSystem）'
+        description: '像素数据对象 (来自convert API，包含mappedData、width、height、colorSystem)',
+        subParameters: {
+          mappedData: {
+            type: 'MappedPixel[][]',
+            description: '像素网格数据，二维数组，每个元素包含色号和坐标',
+            examples: [
+              '[{"color":"#FF0000","x":0,"y":0},{"color":"#00FF00","x":1,"y":0},...]'
+            ]
+          }
+        }
+      },
+      // PixelData结构定义
+      _pixelData_structure: {
+        _title: 'PixelData',
+        _structure: `interface PixelData {
+  mappedData: MappedPixel[][] | null;  // 像素网格数据
+  width: number | null;                 // 网格宽度
+  height: number | null;                // 网格高度
+  colorSystem: ColorSystem;             // 色号系统 (MARD、COCO等)
+}`,
       },
       downloadOptions: {
         showGrid: {
