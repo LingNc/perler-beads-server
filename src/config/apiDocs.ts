@@ -1,7 +1,5 @@
 // 中央化的API文档配置
-// 所有API端点的文档从这里读取，避免重复定义
-
-import { version } from "os";
+// 所有API端点的文档从这里读取，避免重复定义W
 
 // 定义基础类型别名，用于各处需要表示基本数据类型的场景
 type BaseType = string | number | boolean | object | null;
@@ -47,7 +45,7 @@ export interface ApiEndpointDoc {
 }
 
 // 结构前置定义
-let sharePixelData: Parameter = {
+const sharePixelData: Parameter = {
   type: 'PixelData',
   description: 'PixelData (包含 mappedData, width, height, colorSystem)',
   Parameters: {
@@ -82,10 +80,10 @@ let sharePixelData: Parameter = {
   }
 }
 
-let shareCustomPalette: Parameter = {
+const shareCustomPalette: Parameter = {
   type: 'CustomPalette',
   required: false,
-  description: '自定义调色板对象 (POST验证)',
+  description: '[POST]自定义调色板对象',
   Parameters: {
     version: {
       type: 'string',
@@ -690,37 +688,12 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
             }
           }
         },
-        // POST 验证响应
-        isValid: {
-          type: 'boolean',
-          description: '[POST]自定义调色板是否有效'
-        },
         errors: {
           type: 'array',
-          description: '[POST]验证错误信息',
+          description: '[POST,发生错误时]验证错误信息',
           examples: [
             ["颜色格式无效", "调色板为空"]
           ]
-        },
-        processedPalette: {
-          type: 'object',
-          description: '处理后的调色板（POST验证）',
-          Parameters: {
-            totalColors: {
-              type: 'number',
-              description: '颜色总数'
-            },
-            paletteData: {
-              type: 'array',
-              description: '处理后的调色板数据',
-              examples: [
-                [
-                  { "key": "C01", "color": "#FF0000", "name": "红色" },
-                  { "key": "C02", "color": "#00FF00", "name": "绿色" }
-                ]
-              ]
-            }
-          }
         }
       }
     },
@@ -961,9 +934,10 @@ export function getEndpointDoc(endpointName: string): ApiEndpointDoc | null {
 export function getAllEndpointsInfo(): Record<string, unknown> {
   const endpoints: Record<string, unknown> = {};
 
-  Object.entries(API_DOCS).forEach(([, doc]) => {
+  Object.entries(API_DOCS).forEach(([endpointName, doc]) => {
     endpoints[doc.endpoint] = {
       method: doc.method,
+      contentType: doc.contentType,
       description: doc.description,
       parameters: simplifyParameters(doc.parameters || {})
     };
@@ -976,20 +950,32 @@ export function getAllEndpointsInfo(): Record<string, unknown> {
 function simplifyParameters(params: Parameter): Record<string, string> {
   const simplified: Record<string, string> = {};
 
+  // 如果params本身就是一个ApiParameter（单个参数的情况）
+  if ('type' in params) {
+    const param = params as ApiParameter;
+    const defaultText = param.default ? ` (默认: ${param.default})` : '';
+    const rangeText = param.range ? ` [范围: ${param.range}]` : '';
+    const optionsText = param.options ? ` [可选: ${param.options.join(', ')}]` : '';
+    simplified.parameter = `${param.type} - ${param.description || ''}${defaultText}${rangeText}${optionsText}`;
+    return simplified;
+  }
+
+  // 处理参数对象
   Object.entries(params).forEach(([key, param]) => {
-    if (typeof param === 'object' && param.type) {
+    if (typeof param === 'object' && param !== null && 'type' in param) {
       // 单个参数
-      const defaultText = param.default ? ` (默认${param.default})` : '';
-      simplified[key] = `${param.type} - ${param.description}${defaultText}`;
-    } else if (typeof param === 'object') {
-      // 嵌套参数对象
-      Object.entries(param).forEach(([subKey, subParam]) => {
-        // 确保是 ApiParameter 类型
-        if (typeof subParam === 'object' && subParam !== null && 'type' in subParam) {
-          const paramType = subParam as ApiParameter;
-          const defaultText = paramType.default ? ` (默认${paramType.default})` : '';
-          simplified[subKey] = `${paramType.type} - ${paramType.description || ''}${defaultText}`;
-        }
+      const apiParam = param as ApiParameter;
+      const defaultText = apiParam.default !== undefined ? ` (默认: ${apiParam.default})` : '';
+      const rangeText = apiParam.range ? ` [范围: ${apiParam.range}]` : '';
+      const optionsText = apiParam.options ? ` [可选: ${apiParam.options.join(', ')}]` : '';
+      const requiredText = apiParam.required ? ' [必需]' : '';
+
+      simplified[key] = `${apiParam.type} - ${apiParam.description || ''}${defaultText}${rangeText}${optionsText}${requiredText}`;
+    } else if (typeof param === 'object' && param !== null) {
+      // 这可能是嵌套的参数对象，递归处理
+      const nestedParams = simplifyParameters(param as Parameter);
+      Object.entries(nestedParams).forEach(([nestedKey, nestedValue]) => {
+        simplified[`${key}.${nestedKey}`] = nestedValue;
       });
     }
   });
@@ -1019,6 +1005,66 @@ interface RootApiResponse {
   examples: Record<string, unknown>;
 }
 
+// 从API_DOCS动态生成示例
+function generateApiExamples(): Record<string, unknown> {
+  const examples: Record<string, unknown> = {};
+
+  Object.entries(API_DOCS).forEach(([endpointName, doc]) => {
+    if (doc.examples) {
+      Object.entries(doc.examples).forEach(([exampleName, exampleData]) => {
+        const exampleKey = `${endpointName}_${exampleName}`;
+        // 确保exampleData是对象类型
+        if (typeof exampleData === 'object' && exampleData !== null) {
+          examples[exampleKey] = {
+            url: doc.endpoint,
+            method: doc.method,
+            contentType: doc.contentType,
+            description: (exampleData as any).description || `${doc.description} - ${exampleName}示例`,
+            ...(exampleData as Record<string, unknown>)
+          };
+        }
+      });
+    } else {
+      // 如果没有预定义示例，创建一个基本示例
+      examples[`${endpointName}_basic`] = {
+        url: doc.endpoint,
+        method: doc.method,
+        contentType: doc.contentType,
+        description: `${doc.description} - 基本示例`,
+        parameters: doc.parameters ? extractBasicExampleParams(doc.parameters) : {}
+      };
+    }
+  });
+
+  return examples;
+}
+
+// 从参数定义中提取基本示例参数
+function extractBasicExampleParams(params: Parameter): Record<string, unknown> {
+  const exampleParams: Record<string, unknown> = {};
+
+  // 如果params本身就是一个ApiParameter
+  if ('type' in params) {
+    const param = params as ApiParameter;
+    return { parameter: param.default || `[${param.type}]` };
+  }
+
+  Object.entries(params).forEach(([key, param]) => {
+    if (typeof param === 'object' && param !== null && 'type' in param) {
+      const apiParam = param as ApiParameter;
+      if (apiParam.examples && apiParam.examples.length > 0) {
+        exampleParams[key] = apiParam.examples[0];
+      } else if (apiParam.default !== undefined) {
+        exampleParams[key] = apiParam.default;
+      } else {
+        exampleParams[key] = `[${apiParam.type}]`;
+      }
+    }
+  });
+
+  return exampleParams;
+}
+
 // 生成完整的根API响应
 export function generateRootApiResponse(): RootApiResponse {
   return {
@@ -1026,85 +1072,6 @@ export function generateRootApiResponse(): RootApiResponse {
     status: 'active',
     timestamp: new Date().toISOString(),
     endpoints: getAllEndpointsInfo(),
-    examples: {
-      convertImage: {
-        url: '/api/convert',
-        method: 'POST',
-        contentType: 'multipart/form-data',
-        formData: {
-          image: '[图片文件]',
-          granularity: 50,
-          pixelationMode: 'dominant',
-          selectedPalette: '290色'
-        }
-      },
-      convertWithCustomPalette: {
-        url: '/api/convert',
-        method: 'POST',
-        contentType: 'multipart/form-data',
-        formData: {
-          image: '[图片文件]',
-          granularity: 50,
-          selectedPalette: 'custom',
-          customPalette: '[{"key":"红色","hex":"#FF0000"},{"key":"绿色","hex":"#00FF00"}]'
-        }
-      },
-      convertWithPresetPalette: {
-        url: '/api/convert',
-        method: 'POST',
-        contentType: 'multipart/form-data',
-        formData: {
-          image: '[图片文件]',
-          granularity: 50,
-          selectedPalette: '144色拼豆调色板',
-          pixelationMode: 'dominant'
-        }
-      },
-      downloadPattern: {
-        url: '/api/download',
-        method: 'POST',
-        contentType: 'application/json',
-        body: {
-          pixelData: {
-            mappedData: '[[...]]',
-            width: 50,
-            height: 40,
-            colorSystem: 'MARD'
-          },
-          downloadOptions: {
-            showGrid: true,
-            gridLineColor: '#CCCCCC',
-            outerBorderColor: '#141414',
-            showTransparentLabels: false,
-            title: '我的拼豆图纸',
-            renderMode: 'dpi',
-            dpi: 300
-          }
-        }
-      },
-      downloadPatternCustomBorder: {
-        url: '/api/download',
-        method: 'POST',
-        contentType: 'application/json',
-        description: '自定义边框颜色的下载示例',
-        body: {
-          pixelData: {
-            mappedData: '[[...]]',
-            width: 50,
-            height: 40,
-            colorSystem: 'MARD'
-          },
-          downloadOptions: {
-            showGrid: true,
-            gridLineColor: '#DDDDDD',
-            outerBorderColor: '#FF0000',
-            showTransparentLabels: true,
-            title: '彩色边框图纸',
-            renderMode: 'fixed',
-            fixedWidth: 1200
-          }
-        }
-      }
-    }
+    examples: generateApiExamples()
   };
 }
