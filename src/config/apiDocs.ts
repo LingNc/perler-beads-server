@@ -377,7 +377,31 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
     contentType: 'application/json',
     description: '生成并下载拼豆图纸图片',
     parameters: {
+      title: {
+        type: 'string',
+        default: 'none',
+        description: '图纸标题 - 显示在图片顶部的标题栏中，高度已增加'
+      },
       pixelData: sharePixelData,
+      renderMode: {
+        type: 'string',
+        default: 'dpi',
+        options: ['dpi', 'fixed'],
+        description: '渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式',
+        optionDescription: {
+          dpi: {
+            enumName: 'DPI模式',
+            description: 'DPI模式 - 基于DPI设置图片分辨率',
+            usage: '适用于需要特定分辨率的场景，如打印等'
+          },
+          fixed: {
+            enumName: '固定宽度模式',
+            description: '固定宽度模式 - 根据指定的像素宽度渲染',
+            usage: '适用于需要固定尺寸的场景，系统会自动计算单元格大小',
+            note: '如果未指定fixedWidth，将自动使用默认DPI模式'
+          }
+        }
+      },
       // PixelData结构定义已移入pixelData.Parameters
       downloadOptions: {
         type: 'object',
@@ -413,43 +437,20 @@ export const API_DOCS: Record<string, ApiEndpointDoc> = {
             default: true,
             description: '包含统计信息'
           },
-          showTransparentLabels: {
-            type: 'boolean',
-            default: false,
-            description: '是否在透明色（T01）上显示色号标识'
-          },
-          title: {
-            type: 'string',
-            description: '图纸标题 - 显示在图片顶部的标题栏中，高度已增加'
-          },
           dpi: {
             type: 'number',
             default: 150,
             description: '图片分辨率 (DPI) - DPI模式下使用'
           },
-          renderMode: {
-            type: 'string',
-            default: 'dpi',
-            options: ['dpi', 'fixed'],
-            description: '渲染模式：dpi=基于DPI的模式，fixed=固定宽度模式',
-            optionDescription: {
-              dpi: {
-                enumName: 'DPI模式',
-                description: 'DPI模式 - 基于DPI设置图片分辨率',
-                usage: '适用于需要特定分辨率的场景，如打印等'
-              },
-              fixed: {
-                enumName: '固定宽度模式',
-                description: '固定宽度模式 - 根据指定的像素宽度渲染',
-                usage: '适用于需要固定尺寸的场景，系统会自动计算单元格大小',
-                note: '如果未指定fixedWidth，将自动使用默认DPI模式'
-              }
-            }
-          },
           fixedWidth: {
             type: 'number',
             description: '固定宽度（像素）- fixed模式下必需，指定图片的横向宽度'
-          }
+          },
+          showTransparentLabels: {
+            type: 'boolean',
+            default: false,
+            description: '是否在透明色（T01）上显示色号标识'
+          },
         }
       }
     },
