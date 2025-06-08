@@ -48,10 +48,12 @@ export interface ApiEndpointDoc {
 const sharePixelData: Parameter = {
   type: 'PixelData',
   description: 'PixelData (包含 mappedData, width, height, colorSystem)',
+  required: true,
   Parameters: {
     mappedData: {
       type: 'MappedPixel[][]',
       description: '像素网格数据，二维数组，每个元素包含色号，色值和额外属性',
+      required: true,
       examples: [
         [
           [
@@ -67,11 +69,13 @@ const sharePixelData: Parameter = {
     },
     width: {
       type: 'number',
-      description: '网格宽度'
+      description: '网格宽度',
+      required: true,
     },
     height: {
       type: 'number',
-      description: '网格高度'
+      description: '网格高度',
+      required: true,
     },
     colorSystem: {
       type: 'string',
