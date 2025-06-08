@@ -934,7 +934,7 @@ export function getEndpointDoc(endpointName: string): ApiEndpointDoc | null {
 export function getAllEndpointsInfo(): Record<string, unknown> {
   const endpoints: Record<string, unknown> = {};
 
-  Object.entries(API_DOCS).forEach(([endpointName, doc]) => {
+  Object.entries(API_DOCS).forEach(([, doc]) => {
     endpoints[doc.endpoint] = {
       method: doc.method,
       contentType: doc.contentType,
@@ -1015,12 +1015,13 @@ function generateApiExamples(): Record<string, unknown> {
         const exampleKey = `${endpointName}_${exampleName}`;
         // 确保exampleData是对象类型
         if (typeof exampleData === 'object' && exampleData !== null) {
+          const exampleObj = exampleData as Record<string, unknown>;
           examples[exampleKey] = {
             url: doc.endpoint,
             method: doc.method,
             contentType: doc.contentType,
-            description: (exampleData as any).description || `${doc.description} - ${exampleName}示例`,
-            ...(exampleData as Record<string, unknown>)
+            description: (exampleObj.description as string) || `${doc.description} - ${exampleName}示例`,
+            ...exampleObj
           };
         }
       });
