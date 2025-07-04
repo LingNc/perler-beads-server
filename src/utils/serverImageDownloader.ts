@@ -38,6 +38,7 @@ export async function generateImageBuffer({
     gridInterval,
     showCoordinates,
     gridLineColor,
+    outerBorderColor,
     includeStats,
     dpi = 150, // 设置默认值
     fixedWidth,
@@ -90,27 +91,33 @@ export async function generateImageBuffer({
   const gridHeight = M * downloadCellSize;
 
   // 添加适当高度的标题栏
-  const titleBarHeight = title ? 80 * dpiScale : 0; // 减小高度，使布局更紧凑
-
-  // 计算统计区域的大小
+  const titleBarHeight = title ? 80 * dpiScale : 0; // 减小高度，使布局更紧凑  // 计算统计区域的大小
   if (includeStats && colorCounts) {
     const colorKeys = Object.keys(colorCounts);
     const statsTopMargin = 24 * dpiScale;
-    const finalWidth = gridWidth + axisLabelSize + extraLeftMargin + extraRightMargin;    const availableStatsWidth = finalWidth - (statsPadding * 2);
+    // const finalWidth = gridWidth + axisLabelSize + extraLeftMargin + extraRightMargin;
+    // const availableStatsWidth = finalWidth - (statsPadding * 2);
 
     // 色块的基础尺寸（适中大小以容纳文字）
     const baseSwatchSize = Math.max(24 * dpiScale, 28 * dpiScale);
-    const swatchSize = Math.floor(baseSwatchSize + (widthFactor * 15 * dpiScale));
+    const swatchSize = Math.floor(baseSwatchSize + (widthFactor * 10 * dpiScale)); // 减小增长幅度
 
-    // 每个统计项的总宽度（色块 + 间距 + 文字区域）
-    const itemTotalWidth = swatchSize + 8 * dpiScale + 60 * dpiScale; // 色块 + 间距 + 文字宽度
+    // 动态计算实际需要的文字宽度
+    const baseFontSize = Math.max(10 * dpiScale, statsFontSize);
+    // 预估最大数字的宽度（假设最大数值为4位数）
+    const estimatedTextWidth = Math.max(60 * dpiScale, baseFontSize * 4);
+    const itemTotalWidth = swatchSize + 12 * dpiScale + estimatedTextWidth; // 增加间距
 
-    // 根据可用宽度动态计算列数
-    const numColumns = Math.max(1, Math.floor(availableStatsWidth / itemTotalWidth));
+    // 根据网格宽度动态计算列数，确保不会太紧密
+    const statsAvailableWidth = gridWidth;
+    const numColumns = Math.max(1, Math.floor(statsAvailableWidth / itemTotalWidth));
     const numRows = Math.ceil(colorKeys.length / numColumns);
-    const statsRowHeight = swatchSize + 12 * dpiScale; // 增加行高
-    const titleHeight = 40 * dpiScale;
-    const footerHeight = 40 * dpiScale;
+
+    // 优化行高计算，确保有足够空间
+    const statsRowHeight = swatchSize + 16 * dpiScale; // 增加行间距防止覆盖
+    const titleHeight = 2 * (statsFontSize + 2 * dpiScale); // 匹配实际的 itemStartY 计算
+    const footerHeight = 30 * dpiScale; // 总计部分的高度，与 totalY 后的额外空间匹配
+    // const bottomMargin = 30 * dpiScale; // 底部额外边距，确保总计文字不被截断
     statsHeight = titleHeight + (numRows * statsRowHeight) + footerHeight + (statsPadding * 2) + statsTopMargin;
   }
 
@@ -149,21 +156,27 @@ export async function generateImageBuffer({
   if (showCoordinates) {
     ctx.fillStyle = '#666666';
     ctx.font = `${Math.floor(statsFontSize * 0.8)}px sans-serif`;
+
+    // X轴坐标 - 只在网格间隔处显示，从第一个间隔开始
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-
-    // X轴坐标
-    for (let i = 0; i < N; i++) {
-      const textX = offsetX + extraLeftMargin + i * downloadCellSize + axisLabelSize + downloadCellSize / 2;
-      const textY = offsetY + titleBarHeight + extraTopMargin + axisLabelSize / 2;
-      ctx.fillText((i + 1).toString(), textX, textY);
+    for (let i = gridInterval; i <= N; i += gridInterval) {
+      if (i <= N) { // 确保不超过边界
+        const textX = offsetX + extraLeftMargin + (i - 1) * downloadCellSize + axisLabelSize + downloadCellSize / 2;
+        const textY = offsetY + titleBarHeight + extraTopMargin + axisLabelSize / 2;
+        ctx.fillText(i.toString(), textX, textY);
+      }
     }
 
-    // Y轴坐标
-    for (let j = 0; j < M; j++) {
-      const textX = offsetX + extraLeftMargin + axisLabelSize / 2;
-      const textY = offsetY + titleBarHeight + extraTopMargin + j * downloadCellSize + axisLabelSize + downloadCellSize / 2;
-      ctx.fillText((j + 1).toString(), textX, textY);
+    // Y轴坐标 - 只在网格间隔处显示，从第一个间隔开始，右对齐避免被格子遮挡
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let j = gridInterval; j <= M; j += gridInterval) {
+      if (j <= M) { // 确保不超过边界
+        const textX = offsetX + extraLeftMargin + axisLabelSize - 5 * dpiScale; // 右对齐并留出间距
+        const textY = offsetY + titleBarHeight + extraTopMargin + (j - 1) * downloadCellSize + axisLabelSize + downloadCellSize / 2;
+        ctx.fillText(j.toString(), textX, textY);
+      }
     }
   }
 
@@ -233,9 +246,21 @@ export async function generateImageBuffer({
     }
   }
 
-  // 绘制统计信息（如果需要）
+  // 绘制网格外边框
+  if (outerBorderColor) {
+    ctx.strokeStyle = outerBorderColor;
+    ctx.lineWidth = 2 * dpiScale; // 较粗的外边框
+
+    const borderX = offsetX + extraLeftMargin + axisLabelSize;
+    const borderY = offsetY + titleBarHeight + extraTopMargin + axisLabelSize;
+    const borderWidth = N * downloadCellSize;
+    const borderHeight = M * downloadCellSize;
+
+    ctx.strokeRect(borderX, borderY, borderWidth, borderHeight);
+  }  // 绘制统计信息（如果需要）
   if (includeStats && colorCounts) {
     const colorKeys = Object.keys(colorCounts);
+    // 按色号排序（恢复原有排序方式）
     const sortedColorKeys = colorKeys.sort(sortColorKeys);
 
     // 调整统计区域的起始位置，使布局更紧凑
@@ -244,26 +269,26 @@ export async function generateImageBuffer({
 
     // 色块的基础尺寸（适中大小以容纳文字）
     const baseSwatchSize = Math.max(24 * dpiScale, 28 * dpiScale);
-    const swatchSize = Math.floor(baseSwatchSize + (widthFactor * 15 * dpiScale));
-    // 每个统计项的总宽度（色块 + 间距 + 文字区域）
-    const itemTotalWidth = swatchSize + 8 * dpiScale + 60 * dpiScale;
+    const swatchSize = Math.floor(baseSwatchSize + (widthFactor * 10 * dpiScale)); // 减小增长幅度
 
-    // 根据可用宽度动态计算列数
+    // 优化统计项宽度计算 - 动态计算实际需要的文字宽度
+    ctx.font = `${Math.max(10 * dpiScale, statsFontSize)}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
+    let maxTextWidth = 0;
+    sortedColorKeys.forEach(colorKey => {
+      const colorData = colorCounts[colorKey];
+      const textWidth = ctx.measureText(`${colorData.count}`).width;
+      maxTextWidth = Math.max(maxTextWidth, textWidth);
+    });
+
+    // 每个统计项的总宽度（色块 + 间距 + 实际文字宽度 + 额外边距）
+    const itemTotalWidth = swatchSize + 12 * dpiScale + maxTextWidth + 20 * dpiScale; // 增加间距
+
+    // 根据可用宽度动态计算列数，确保不会太紧密
     const numColumns = Math.max(1, Math.floor(availableWidth / itemTotalWidth));
 
-    // 统计标题 - 与Y轴坐标数字的左边对齐
-    let statsLeftAlign;
-    if (showCoordinates) {
-      // 计算最大Y轴坐标数字的宽度
-      ctx.font = `${Math.floor(statsFontSize * 0.8)}px sans-serif`;
-      const maxYNumber = M.toString();
-      const numberWidth = ctx.measureText(maxYNumber).width;
-      // Y轴坐标中心位置减去数字宽度的一半
-      const yAxisCenterX = offsetX + extraLeftMargin + axisLabelSize / 2;
-      statsLeftAlign = yAxisCenterX - numberWidth / 2;
-    } else {
-      statsLeftAlign = offsetX + statsPadding;
-    }
+    // 统计标题 - 与网格左边对齐
+    const gridLeftEdge = offsetX + extraLeftMargin + axisLabelSize;
+    const statsLeftAlign = gridLeftEdge;
 
     ctx.fillStyle = '#333333';
     ctx.font = `bold ${statsFontSize + 2 * dpiScale}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
@@ -271,9 +296,12 @@ export async function generateImageBuffer({
     ctx.textBaseline = 'top';
     ctx.fillText('豆子用量统计', statsLeftAlign, statsStartY);
 
-    // 绘制颜色统计
-    const itemStartY = statsStartY + 40 * dpiScale;
-    const columnWidth = availableWidth / numColumns;
+    // 绘制颜色统计 - 增加标题到色块的间距
+    const itemStartY = statsStartY + 2*(statsFontSize+2*dpiScale); // 增加标题到内容的间距，防止覆盖
+
+    // 重新计算可用宽度，确保不会超出边界
+    const statsAreaWidth = gridWidth; // 使用网格宽度作为统计区域宽度
+    const actualColumnWidth = Math.floor(statsAreaWidth / numColumns);
 
     // 计算色块内文字的字体大小 - 增大文字大小以提高可读性
     const swatchFontSize = Math.max(10 * dpiScale, Math.min(16 * dpiScale, swatchSize / 3));
@@ -284,8 +312,9 @@ export async function generateImageBuffer({
       const column = index % numColumns;
       const row = Math.floor(index / numColumns);
 
-      const itemX = statsLeftAlign + column * columnWidth;
-      const itemY = itemStartY + row * (swatchSize + 12 * dpiScale);
+      // 统计项与网格左边对齐
+      const itemX = gridLeftEdge + column * actualColumnWidth;
+      const itemY = itemStartY + row * (swatchSize + 16 * dpiScale); // 增加行间距防止覆盖
 
       // 绘制色块
       ctx.fillStyle = colorData.color;
@@ -308,16 +337,16 @@ export async function generateImageBuffer({
       ctx.font = `${countFontSize}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle'; // 垂直居中
-      ctx.fillText(`${colorData.count}`, itemX + swatchSize + 8 * dpiScale, itemY + swatchSize / 2);
+      ctx.fillText(`${colorData.count}`, itemX + swatchSize + 12 * dpiScale, itemY + swatchSize / 2);
     });
 
-    // 总计
-    const totalY = itemStartY + Math.ceil(sortedColorKeys.length / numColumns) * (swatchSize + 12 * dpiScale) + 20 * dpiScale;
+    // 总计 - 确保有足够的空间，与网格左边对齐
+    const totalY = itemStartY + Math.ceil(sortedColorKeys.length / numColumns) * (swatchSize + 16 * dpiScale); // 增加间距
     ctx.fillStyle = '#333333';
     ctx.font = `bold ${statsFontSize + 1 * dpiScale}px "Noto Sans CJK SC", "Microsoft YaHei", "WenQuanYi Micro Hei", sans-serif`;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(`总计: ${totalBeadCount} 颗`, statsLeftAlign, totalY);
+    ctx.fillText(`总计: ${totalBeadCount} 颗`, gridLeftEdge, totalY);
   }
 
   // 返回PNG buffer

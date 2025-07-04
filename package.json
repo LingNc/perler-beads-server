@@ -10,6 +10,9 @@
     "test:api": "cd tests && python test_all_features.py",
     "api:status": "curl -s http://localhost:3000/api/status | python -m json.tool",
     "api:docs": "curl -s http://localhost:3000/api | python -m json.tool",
+    "docs:generate": "python scripts/generate_docs.py",
+    "docs:validate": "python tests/validate_docs.py",
+    "docs:update": "python scripts/update_all_docs.py",
     "update": "git pull origin main && npm install",
     "update:force": "git fetch --all && git reset --hard origin/main && npm install",
     "update:rebuild": "npm run update && npm run build"
